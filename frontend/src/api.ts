@@ -1,12 +1,17 @@
 import axios from 'axios'
 import type {
+  AdminDashboard,
   AdminStats,
+  AdminUser,
   ApiResponse,
   AuthResponse,
   MatchReport,
   Question,
   Recommendation,
+  RecommendationRule,
   Report,
+  ReportSnapshot,
+  ShareLinkSummary,
   TestResult,
   UserProfile
 } from './types'
@@ -57,7 +62,11 @@ export const testApi = {
 
 export const reportApi = {
   me: () => dataOf<Report>(api.get('/reports/me')),
+  history: () => dataOf<ReportSnapshot[]>(api.get('/reports/history')),
+  get: (id: number) => dataOf<ReportSnapshot>(api.get(`/reports/${id}`)),
   share: () => dataOf<{ token: string; url: string; report: Report }>(api.post('/shares/report')),
+  shares: () => dataOf<ShareLinkSummary[]>(api.get('/shares')),
+  revokeShare: (id: number) => dataOf<void>(api.delete(`/shares/${id}`)),
   byToken: (token: string) => dataOf<Report>(api.get(`/shares/${token}`))
 }
 
@@ -69,20 +78,29 @@ export const recommendationApi = {
 
 export const matchApi = {
   create: (friendPhone: string) => dataOf<MatchReport>(api.post('/matches', { friendPhone })),
+  list: () => dataOf<MatchReport[]>(api.get('/matches')),
   get: (id: number) => dataOf<MatchReport>(api.get(`/matches/${id}`))
 }
 
 export const adminApi = {
   stats: () => dataOf<AdminStats>(api.get('/admin/stats')),
+  dashboard: () => dataOf<AdminDashboard>(api.get('/admin/dashboard')),
   questions: () => dataOf<Question[]>(api.get('/admin/questions')),
   feedback: () => dataOf<unknown[]>(api.get('/admin/feedback')),
   logs: () => dataOf<unknown[]>(api.get('/admin/logs')),
+  users: () => dataOf<AdminUser[]>(api.get('/admin/users')),
+  updateUser: (id: number, payload: { active?: boolean; role?: string }) =>
+    dataOf<AdminUser>(api.put(`/admin/users/${id}`, payload)),
   recommendationItems: () => dataOf<Recommendation[]>(api.get('/admin/recommendation-items')),
   createQuestion: (payload: unknown) => dataOf<Question>(api.post('/admin/questions', payload)),
   updateQuestion: (id: number, payload: unknown) => dataOf<Question>(api.put(`/admin/questions/${id}`, payload)),
   deleteQuestion: (id: number) => dataOf<void>(api.delete(`/admin/questions/${id}`)),
   createRecommendation: (payload: unknown) => dataOf<Recommendation>(api.post('/admin/recommendation-items', payload)),
   updateRecommendation: (id: number, payload: unknown) => dataOf<Recommendation>(api.put(`/admin/recommendation-items/${id}`, payload)),
-  deleteRecommendation: (id: number) => dataOf<void>(api.delete(`/admin/recommendation-items/${id}`))
+  deleteRecommendation: (id: number) => dataOf<void>(api.delete(`/admin/recommendation-items/${id}`)),
+  recommendationRules: () => dataOf<RecommendationRule[]>(api.get('/admin/recommendation-rules')),
+  createRecommendationRule: (payload: unknown) => dataOf<RecommendationRule>(api.post('/admin/recommendation-rules', payload)),
+  updateRecommendationRule: (id: number, payload: unknown) =>
+    dataOf<RecommendationRule>(api.put(`/admin/recommendation-rules/${id}`, payload)),
+  deleteRecommendationRule: (id: number) => dataOf<void>(api.delete(`/admin/recommendation-rules/${id}`))
 }
-

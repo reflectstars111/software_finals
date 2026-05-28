@@ -5,6 +5,7 @@ import com.personality.radar.dto.ApiDtos;
 import com.personality.radar.service.CurrentUserService;
 import com.personality.radar.service.MatchService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,9 +29,13 @@ public class MatchController {
         return ApiResponse.ok(matchService.create(currentUser.requireUser(), request));
     }
 
+    @GetMapping
+    public ApiResponse<List<ApiDtos.MatchResponse>> list() {
+        return ApiResponse.ok(matchService.list(currentUser.requireUser()));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<ApiDtos.MatchResponse> get(@PathVariable Long id) {
         return ApiResponse.ok(matchService.get(currentUser.requireUser(), id));
     }
 }
-

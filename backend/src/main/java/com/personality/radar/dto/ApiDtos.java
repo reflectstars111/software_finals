@@ -29,7 +29,7 @@ public final class ApiDtos {
             @Size(max = 300) String avatarUrl) {
     }
 
-    public record UserProfileResponse(Long id, String phone, String displayName, String avatarUrl, String role) {
+    public record UserProfileResponse(Long id, String phone, String displayName, String avatarUrl, String role, boolean active) {
     }
 
     public record AuthResponse(String token, UserProfileResponse user) {
@@ -63,13 +63,18 @@ public final class ApiDtos {
             Instant generatedAt) {
     }
 
+    public record ReportSnapshotResponse(Long id, ReportResponse report, String summary, Instant createdAt) {
+    }
+
     public record RecommendationResponse(
             Long id,
             String scene,
             String title,
             String description,
             List<String> tags,
-            int score) {
+            int score,
+            Integer baseScore,
+            boolean active) {
     }
 
     public record FeedbackRequest(
@@ -93,6 +98,16 @@ public final class ApiDtos {
     }
 
     public record ShareResponse(String token, String url, ReportResponse report) {
+    }
+
+    public record ShareLinkSummaryResponse(
+            Long id,
+            String token,
+            String url,
+            boolean active,
+            Instant createdAt,
+            Instant expiresAt,
+            Instant revokedAt) {
     }
 
     public record AdminOptionRequest(
@@ -131,5 +146,44 @@ public final class ApiDtos {
             String rating,
             String comment,
             Instant createdAt) {
+    }
+
+    public record AdminDashboardResponse(
+            AdminStatsResponse stats,
+            Map<String, Long> testsByType,
+            Map<String, Long> feedbackByRating,
+            Map<String, Long> recommendationsByScene,
+            long activeShares) {
+    }
+
+    public record AdminUserResponse(
+            Long id,
+            String phone,
+            String displayName,
+            String avatarUrl,
+            String role,
+            boolean active,
+            int failedLoginAttempts,
+            Instant lockedUntil,
+            Instant lastLoginAt,
+            Instant createdAt) {
+    }
+
+    public record AdminUserUpdateRequest(Boolean active, String role) {
+    }
+
+    public record RecommendationRuleRequest(
+            @NotBlank String tag,
+            @NotBlank String label,
+            Integer weight,
+            Boolean active) {
+    }
+
+    public record RecommendationRuleResponse(
+            Long id,
+            String tag,
+            String label,
+            int weight,
+            boolean active) {
     }
 }

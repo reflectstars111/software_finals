@@ -58,6 +58,13 @@ public class MatchService {
                 .orElseThrow(() -> new BusinessException(404, "适配报告不存在"));
     }
 
+    @Transactional(readOnly = true)
+    public List<ApiDtos.MatchResponse> list(UserAccount owner) {
+        return reports.findByOwnerOrderByCreatedAtDesc(owner).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ApiDtos.MatchResponse toResponse(CompatibilityReport report) {
         return new ApiDtos.MatchResponse(
                 report.getId(),
@@ -86,4 +93,3 @@ public class MatchService {
                 .toList();
     }
 }
-

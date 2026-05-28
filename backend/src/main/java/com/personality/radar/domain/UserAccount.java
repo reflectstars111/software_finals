@@ -26,6 +26,16 @@ public class UserAccount {
     private Role role = Role.USER;
 
     @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false)
+    private int failedLoginAttempts = 0;
+
+    private Instant lockedUntil;
+
+    private Instant lastLoginAt;
+
+    @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
     public Long getId() {
@@ -72,8 +82,39 @@ public class UserAccount {
         this.role = role;
     }
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(int failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(Instant lockedUntil) {
+        this.lockedUntil = lockedUntil;
+    }
+
+    public Instant getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(Instant lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
 }
-

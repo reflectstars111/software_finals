@@ -82,5 +82,45 @@ public class AdminController {
     public ApiResponse<ApiDtos.AdminStatsResponse> stats() {
         return ApiResponse.ok(adminService.stats());
     }
-}
 
+    @GetMapping("/dashboard")
+    public ApiResponse<ApiDtos.AdminDashboardResponse> dashboard() {
+        return ApiResponse.ok(adminService.dashboard());
+    }
+
+    @GetMapping("/users")
+    public ApiResponse<List<ApiDtos.AdminUserResponse>> users() {
+        return ApiResponse.ok(adminService.users());
+    }
+
+    @PutMapping("/users/{id}")
+    public ApiResponse<ApiDtos.AdminUserResponse> updateUser(
+            @PathVariable Long id,
+            @RequestBody ApiDtos.AdminUserUpdateRequest request) {
+        return ApiResponse.ok(adminService.updateUser(currentUser.requireUser(), id, request));
+    }
+
+    @GetMapping("/recommendation-rules")
+    public ApiResponse<List<ApiDtos.RecommendationRuleResponse>> recommendationRules() {
+        return ApiResponse.ok(adminService.recommendationRules());
+    }
+
+    @PostMapping("/recommendation-rules")
+    public ApiResponse<ApiDtos.RecommendationRuleResponse> createRecommendationRule(
+            @Valid @RequestBody ApiDtos.RecommendationRuleRequest request) {
+        return ApiResponse.ok(adminService.createRecommendationRule(currentUser.requireUser(), request));
+    }
+
+    @PutMapping("/recommendation-rules/{id}")
+    public ApiResponse<ApiDtos.RecommendationRuleResponse> updateRecommendationRule(
+            @PathVariable Long id,
+            @Valid @RequestBody ApiDtos.RecommendationRuleRequest request) {
+        return ApiResponse.ok(adminService.updateRecommendationRule(currentUser.requireUser(), id, request));
+    }
+
+    @DeleteMapping("/recommendation-rules/{id}")
+    public ApiResponse<Void> deleteRecommendationRule(@PathVariable Long id) {
+        adminService.deleteRecommendationRule(currentUser.requireUser(), id);
+        return ApiResponse.ok();
+    }
+}

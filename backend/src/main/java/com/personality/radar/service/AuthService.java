@@ -6,6 +6,8 @@ import com.personality.radar.domain.UserAccount;
 import com.personality.radar.dto.ApiDtos;
 import com.personality.radar.repository.UserRepository;
 import com.personality.radar.security.JwtService;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,12 +38,29 @@ public class AuthService {
         return authResponse(user);
     }
 
+    @Transactional
     public ApiDtos.AuthResponse login(ApiDtos.LoginRequest request) {
         UserAccount user = users.findByPhone(request.phone())
                 .orElseThrow(() -> new BusinessException(401, "账号或密码错误"));
+        if (!user.isActive()) {
+            throw new BusinessException(403, "账号已停用");
+        }
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(Instant.now())) {
+            throw new BusinessException(429, "登录失败次数过多，请稍后再试");
+        }
         if (!encoder.matches(request.password(), user.getPasswordHash())) {
+            int attempts = user.getFailedLoginAttempts() + 1;
+            user.setFailedLoginAttempts(attempts);
+            if (attempts >= 5) {
+                user.setLockedUntil(Instant.now().plus(10, ChronoUnit.MINUTES));
+            }
+            users.save(user);
             throw new BusinessException(401, "账号或密码错误");
         }
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        user.setLastLoginAt(Instant.now());
+        users.save(user);
         return authResponse(user);
     }
 
@@ -49,4 +68,3 @@ public class AuthService {
         return new ApiDtos.AuthResponse(jwtService.createToken(user.getPhone()), DtoMapper.user(user));
     }
 }
-

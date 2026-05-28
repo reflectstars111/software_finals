@@ -4,6 +4,7 @@ import com.personality.radar.common.BusinessException;
 import com.personality.radar.domain.Feedback;
 import com.personality.radar.domain.FeedbackRating;
 import com.personality.radar.domain.RecommendationItem;
+import com.personality.radar.domain.RecommendationRule;
 import com.personality.radar.domain.SceneType;
 import com.personality.radar.domain.TestResult;
 import com.personality.radar.domain.TestType;
@@ -12,6 +13,7 @@ import com.personality.radar.domain.UserPreference;
 import com.personality.radar.dto.ApiDtos;
 import com.personality.radar.repository.FeedbackRepository;
 import com.personality.radar.repository.RecommendationItemRepository;
+import com.personality.radar.repository.RecommendationRuleRepository;
 import com.personality.radar.repository.TestResultRepository;
 import com.personality.radar.repository.UserPreferenceRepository;
 import java.util.Comparator;
@@ -27,16 +29,19 @@ public class RecommendationService {
     private final TestResultRepository results;
     private final FeedbackRepository feedbacks;
     private final UserPreferenceRepository preferences;
+    private final RecommendationRuleRepository rules;
 
     public RecommendationService(
             RecommendationItemRepository items,
             TestResultRepository results,
             FeedbackRepository feedbacks,
-            UserPreferenceRepository preferences) {
+            UserPreferenceRepository preferences,
+            RecommendationRuleRepository rules) {
         this.items = items;
         this.results = results;
         this.feedbacks = feedbacks;
         this.preferences = preferences;
+        this.rules = rules;
     }
 
     public List<ApiDtos.RecommendationResponse> recommend(UserAccount user, String sceneValue) {
@@ -45,9 +50,11 @@ public class RecommendationService {
                 .orElseThrow(() -> new BusinessException(400, "请先完成基础性格测试"));
         Map<String, Integer> preferenceMap = preferences.findByUser(user).stream()
                 .collect(Collectors.toMap(UserPreference::getTag, UserPreference::getWeight));
+        Map<String, Integer> ruleMap = rules.findByActiveTrueOrderByTagAsc().stream()
+                .collect(Collectors.toMap(RecommendationRule::getTag, RecommendationRule::getWeight));
         return items.findBySceneAndActiveTrue(scene).stream()
                 .map(item -> DtoMapper.recommendation(item,
-                        RecommendationRanker.score(item.getBaseScore(), item.getTags(), preferenceMap, result.getScores())))
+                        RecommendationRanker.score(item.getBaseScore(), item.getTags(), preferenceMap, result.getScores(), ruleMap)))
                 .sorted(Comparator.comparing(ApiDtos.RecommendationResponse::score).reversed())
                 .toList();
     }
@@ -81,4 +88,3 @@ public class RecommendationService {
         }
     }
 }
-

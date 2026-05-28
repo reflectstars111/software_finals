@@ -10,6 +10,7 @@ export interface UserProfile {
   displayName: string
   avatarUrl?: string
   role: 'USER' | 'ADMIN'
+  active: boolean
 }
 
 export interface AuthResponse {
@@ -54,6 +55,13 @@ export interface Report {
   generatedAt: string
 }
 
+export interface ReportSnapshot {
+  id: number
+  report: Report
+  summary: string
+  createdAt: string
+}
+
 export interface Recommendation {
   id: number
   scene: string
@@ -61,6 +69,8 @@ export interface Recommendation {
   description: string
   tags: string[]
   score: number
+  baseScore?: number
+  active?: boolean
 }
 
 export interface MatchReport {
@@ -83,3 +93,41 @@ export interface AdminStats {
   matches: number
 }
 
+export interface ShareLinkSummary {
+  id: number
+  token: string
+  url: string
+  active: boolean
+  createdAt: string
+  expiresAt?: string
+  revokedAt?: string
+}
+
+export interface AdminDashboard {
+  stats: AdminStats
+  testsByType: Record<string, number>
+  feedbackByRating: Record<string, number>
+  recommendationsByScene: Record<string, number>
+  activeShares: number
+}
+
+export interface AdminUser {
+  id: number
+  phone: string
+  displayName: string
+  avatarUrl?: string
+  role: 'USER' | 'ADMIN'
+  active: boolean
+  failedLoginAttempts: number
+  lockedUntil?: string
+  lastLoginAt?: string
+  createdAt: string
+}
+
+export interface RecommendationRule {
+  id: number
+  tag: string
+  label: string
+  weight: number
+  active: boolean
+}

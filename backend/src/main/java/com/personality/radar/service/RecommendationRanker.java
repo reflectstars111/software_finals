@@ -8,9 +8,19 @@ public final class RecommendationRanker {
     }
 
     public static int score(int baseScore, List<String> tags, Map<String, Integer> preferences, Map<String, Integer> scores) {
+        return score(baseScore, tags, preferences, scores, Map.of());
+    }
+
+    public static int score(
+            int baseScore,
+            List<String> tags,
+            Map<String, Integer> preferences,
+            Map<String, Integer> scores,
+            Map<String, Integer> ruleWeights) {
         int result = baseScore;
         for (String tag : tags) {
             result += preferences.getOrDefault(tag, 0);
+            result += ruleWeights.getOrDefault(tag, 0);
         }
         int openness = scores.getOrDefault("OPENNESS", 50);
         int conscientiousness = scores.getOrDefault("CONSCIENTIOUSNESS", 50);
@@ -31,4 +41,3 @@ public final class RecommendationRanker {
         return Math.max(0, Math.min(100, result));
     }
 }
-

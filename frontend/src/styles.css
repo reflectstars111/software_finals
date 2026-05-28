@@ -127,6 +127,11 @@ a {
   margin-bottom: 20px;
 }
 
+.page-header.compact {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
 .eyebrow {
   color: var(--teal);
   font-size: 13px;
@@ -172,6 +177,10 @@ h3 {
 
 .grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .grid.five {
@@ -267,6 +276,42 @@ button.danger {
 .field textarea {
   min-height: 82px;
   resize: vertical;
+}
+
+.check-line {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.option-editor {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #fbfbf8;
+}
+
+.weights-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
 }
 
 .segmented {
@@ -413,7 +458,12 @@ th {
 
   .grid.two,
   .grid.three,
+  .grid.four,
   .grid.five {
+    grid-template-columns: 1fr;
+  }
+
+  .weights-grid {
     grid-template-columns: 1fr;
   }
 

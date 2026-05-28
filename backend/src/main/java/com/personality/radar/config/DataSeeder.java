@@ -4,6 +4,7 @@ import com.personality.radar.domain.PersonalityDimension;
 import com.personality.radar.domain.Question;
 import com.personality.radar.domain.QuestionOption;
 import com.personality.radar.domain.RecommendationItem;
+import com.personality.radar.domain.RecommendationRule;
 import com.personality.radar.domain.Role;
 import com.personality.radar.domain.SceneType;
 import com.personality.radar.domain.TestResult;
@@ -11,6 +12,7 @@ import com.personality.radar.domain.TestType;
 import com.personality.radar.domain.UserAccount;
 import com.personality.radar.repository.QuestionRepository;
 import com.personality.radar.repository.RecommendationItemRepository;
+import com.personality.radar.repository.RecommendationRuleRepository;
 import com.personality.radar.repository.TestResultRepository;
 import com.personality.radar.repository.UserRepository;
 import java.util.List;
@@ -26,6 +28,7 @@ public class DataSeeder implements ApplicationRunner {
     private final UserRepository users;
     private final QuestionRepository questions;
     private final RecommendationItemRepository items;
+    private final RecommendationRuleRepository rules;
     private final TestResultRepository results;
     private final PasswordEncoder encoder;
 
@@ -33,11 +36,13 @@ public class DataSeeder implements ApplicationRunner {
             UserRepository users,
             QuestionRepository questions,
             RecommendationItemRepository items,
+            RecommendationRuleRepository rules,
             TestResultRepository results,
             PasswordEncoder encoder) {
         this.users = users;
         this.questions = questions;
         this.items = items;
+        this.rules = rules;
         this.results = results;
         this.encoder = encoder;
     }
@@ -47,6 +52,7 @@ public class DataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         seedUsers();
         seedQuestions();
+        seedRecommendationRules();
         seedRecommendations();
         seedDemoResults();
     }
@@ -171,6 +177,24 @@ public class DataSeeder implements ApplicationRunner {
         items.save(item(SceneType.CAREER, "协作沟通路径", "适合在团队任务中发挥关系协调与表达优势。", 64, "social", "gentle"));
     }
 
+    private void seedRecommendationRules() {
+        if (rules.count() > 0) {
+            return;
+        }
+        rules.save(rule("explore", "探索尝鲜", 4));
+        rules.save(rule("structured", "计划稳定", 4));
+        rules.save(rule("social", "社交表达", 3));
+        rules.save(rule("gentle", "舒缓恢复", 3));
+    }
+
+    private RecommendationRule rule(String tag, String label, int weight) {
+        RecommendationRule rule = new RecommendationRule();
+        rule.setTag(tag);
+        rule.setLabel(label);
+        rule.setWeight(weight);
+        return rule;
+    }
+
     private RecommendationItem item(SceneType scene, String title, String description, int baseScore, String... tags) {
         RecommendationItem item = new RecommendationItem();
         item.setScene(scene);
@@ -209,4 +233,3 @@ public class DataSeeder implements ApplicationRunner {
         return result;
     }
 }
-

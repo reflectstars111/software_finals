@@ -21,7 +21,10 @@ public class CurrentUserService {
         if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) {
             throw new BusinessException(401, "请先登录");
         }
-        return users.findById(principal.id()).orElseThrow(() -> new BusinessException(401, "登录状态已失效"));
+        UserAccount user = users.findById(principal.id()).orElseThrow(() -> new BusinessException(401, "登录状态已失效"));
+        if (!user.isActive()) {
+            throw new BusinessException(403, "账号已停用");
+        }
+        return user;
     }
 }
-

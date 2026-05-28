@@ -41,6 +41,28 @@ docker compose up --build
 - `CORS_ALLOWED_ORIGINS`
 - `PUBLIC_BASE_URL`
 
+正式对外发布前建议显式设置 `JWT_SECRET`，不要依赖本地开发默认值：
+
+```powershell
+$env:JWT_SECRET='替换为至少 32 位的随机字符串'
+```
+
+如果通过 Cloudflare Tunnel + Caddy 发布，保持：
+
+- `PUBLIC_BASE_URL=https://app.reflectstars.dev`
+- `CORS_ALLOWED_ORIGINS=https://app.reflectstars.dev,https://reflectstars.dev`
+
+## 数据备份
+
+`infra/backup-mysql.ps1` 会调用 `docker exec radar-mysql mysqldump` 导出当前数据库：
+
+```powershell
+cd infra
+.\backup-mysql.ps1
+```
+
+备份文件默认写入 `infra/backups/`。
+
 ## 启动前端
 
 在 `frontend/` 目录执行：

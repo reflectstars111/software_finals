@@ -3,6 +3,7 @@ package com.personality.radar.service;
 import com.personality.radar.domain.Question;
 import com.personality.radar.domain.QuestionOption;
 import com.personality.radar.domain.RecommendationItem;
+import com.personality.radar.domain.RecommendationRule;
 import com.personality.radar.domain.TestResult;
 import com.personality.radar.domain.UserAccount;
 import com.personality.radar.dto.ApiDtos;
@@ -18,7 +19,8 @@ public final class DtoMapper {
                 user.getPhone(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),
-                user.getRole().name());
+                user.getRole().name(),
+                user.isActive());
     }
 
     public static ApiDtos.QuestionResponse question(Question question) {
@@ -53,7 +55,31 @@ public final class DtoMapper {
                 item.getTitle(),
                 item.getDescription(),
                 List.copyOf(item.getTags()),
-                score);
+                score,
+                item.getBaseScore(),
+                item.isActive());
+    }
+
+    public static ApiDtos.AdminUserResponse adminUser(UserAccount user) {
+        return new ApiDtos.AdminUserResponse(
+                user.getId(),
+                user.getPhone(),
+                user.getDisplayName(),
+                user.getAvatarUrl(),
+                user.getRole().name(),
+                user.isActive(),
+                user.getFailedLoginAttempts(),
+                user.getLockedUntil(),
+                user.getLastLoginAt(),
+                user.getCreatedAt());
+    }
+
+    public static ApiDtos.RecommendationRuleResponse recommendationRule(RecommendationRule rule) {
+        return new ApiDtos.RecommendationRuleResponse(
+                rule.getId(),
+                rule.getTag(),
+                rule.getLabel(),
+                rule.getWeight(),
+                rule.isActive());
     }
 }
-

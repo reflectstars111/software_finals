@@ -22,6 +22,13 @@ public class ShareLink {
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(nullable = false)
+    private boolean active = true;
+
+    private Instant expiresAt;
+
+    private Instant revokedAt;
+
     public Long getId() {
         return id;
     }
@@ -53,5 +60,28 @@ public class ShareLink {
     public Instant getCreatedAt() {
         return createdAt;
     }
-}
 
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
+
+    public void setRevokedAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+}

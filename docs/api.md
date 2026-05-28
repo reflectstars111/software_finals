@@ -35,6 +35,8 @@ Authorization: Bearer <JWT>
 | `POST` | `/api/tests/submit` | 提交答案并生成测试结果 |
 | `GET` | `/api/tests/history` | 查看历史测试记录 |
 | `GET` | `/api/reports/me` | 获取最新综合画像报告 |
+| `GET` | `/api/reports/history` | 查看报告快照历史 |
+| `GET` | `/api/reports/{id}` | 查看指定报告快照 |
 
 测试提交示例：
 
@@ -57,8 +59,11 @@ Authorization: Bearer <JWT>
 | `GET` | `/api/recommendations?scene=career` | 获取生涯推荐 |
 | `POST` | `/api/recommendations/{id}/feedback` | 提交推荐反馈 |
 | `POST` | `/api/matches` | 根据好友手机号生成双人适配 |
+| `GET` | `/api/matches` | 查看当前用户适配报告历史 |
 | `GET` | `/api/matches/{id}` | 查看适配报告 |
 | `POST` | `/api/shares/report` | 生成报告分享链接 |
+| `GET` | `/api/shares` | 查看当前用户分享链接 |
+| `DELETE` | `/api/shares/{id}` | 撤销当前用户分享链接 |
 | `GET` | `/api/shares/{token}` | 查看只读分享报告 |
 
 反馈提交示例：
@@ -85,6 +90,9 @@ Authorization: Bearer <JWT>
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/admin/stats` | 基础统计 |
+| `GET` | `/api/admin/dashboard` | 后台运营统计 |
+| `GET` | `/api/admin/users` | 用户列表 |
+| `PUT` | `/api/admin/users/{id}` | 停用、恢复或调整用户角色 |
 | `GET` | `/api/admin/questions` | 题库列表 |
 | `POST` | `/api/admin/questions` | 新增题目 |
 | `PUT` | `/api/admin/questions/{id}` | 修改题目 |
@@ -93,5 +101,9 @@ Authorization: Bearer <JWT>
 | `POST` | `/api/admin/recommendation-items` | 新增推荐项 |
 | `PUT` | `/api/admin/recommendation-items/{id}` | 修改推荐项 |
 | `DELETE` | `/api/admin/recommendation-items/{id}` | 停用推荐项 |
+| `GET` | `/api/admin/recommendation-rules` | 推荐标签规则列表 |
+| `POST` | `/api/admin/recommendation-rules` | 新增推荐标签规则 |
+| `PUT` | `/api/admin/recommendation-rules/{id}` | 修改推荐标签规则 |
+| `DELETE` | `/api/admin/recommendation-rules/{id}` | 删除推荐标签规则 |
 | `GET` | `/api/admin/feedback` | 最近反馈 |
 | `GET` | `/api/admin/logs` | 后台操作日志 |
