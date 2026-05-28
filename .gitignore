@@ -1,0 +1,16 @@
+.idea/
+.vscode/
+node_modules/
+dist/
+target/
+.mvn/
+.m2/
+maven-repo/
+verify-classes/
+*.log
+.env
+.DS_Store
+infra/mysql-data/
+infra/redis-data/
+frontend/npm-cache*/
+frontend/pnpm-store*/
