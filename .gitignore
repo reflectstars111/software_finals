@@ -8,12 +8,15 @@ target/
 maven-repo/
 verify-classes/
 *.log
+*.pyc
 .env
 .DS_Store
 infra/mysql-data/
 infra/redis-data/
 frontend/npm-cache*/
 frontend/pnpm-store*/
+deploy/runtime/
+tools/__pycache__/
 
 # wrangler files
 .wrangler

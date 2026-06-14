@@ -1,59 +1,63 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
-import html2canvas from 'html2canvas'
-import { nextTick, onMounted, ref } from 'vue'
-import { reportApi } from '../api'
-import type { Report, ReportSnapshot, ShareLinkSummary } from '../types'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import EmptyState from '../components/common/EmptyState.vue'
+import PageContainer from '../components/common/PageContainer.vue'
+import ReportDimensionCard from '../components/report/ReportDimensionCard.vue'
+import { demoPortrait } from '../data/mockUsers'
+import type { UserPortrait } from '../productTypes'
+import { dimensionExplanation, personalityDimensionLabels, portraitSummary, portraitTitle } from '../utils/scoring'
+import { loadProductState } from '../utils/storage'
 
-const report = ref<Report | null>(null)
-const history = ref<ReportSnapshot[]>([])
-const shares = ref<ShareLinkSummary[]>([])
-const error = ref('')
-const notice = ref('')
+const route = useRoute()
 const chartEl = ref<HTMLDivElement | null>(null)
-const reportEl = ref<HTMLElement | null>(null)
+const notice = ref('')
 let chart: echarts.ECharts | null = null
 
-function formatTime(value?: string) {
-  return value ? new Date(value).toLocaleString() : '暂无'
-}
+const isDemo = computed(() => route.query.demo === 'true')
+const state = computed(() => loadProductState())
+const portrait = computed<UserPortrait | null>(() => isDemo.value ? demoPortrait : state.value.portrait)
+const title = computed(() => portrait.value ? portraitTitle(portrait.value) : '')
+const summary = computed(() => portrait.value ? portraitSummary(portrait.value) : '')
 
-async function load() {
-  error.value = ''
-  try {
-    report.value = await reportApi.me()
-    history.value = await reportApi.history()
-    shares.value = await reportApi.shares()
-    await nextTick()
-    draw()
-  } catch (err) {
-    error.value = (err as Error).message
-  }
-}
+const dimensionCards = computed(() => {
+  if (!portrait.value) return []
+  return (Object.keys(personalityDimensionLabels) as Array<keyof typeof personalityDimensionLabels>).map((key) => ({
+    key,
+    name: personalityDimensionLabels[key],
+    score: portrait.value![key],
+    ...dimensionExplanation(key, portrait.value![key])
+  }))
+})
 
-async function openSnapshot(item: ReportSnapshot) {
-  report.value = item.report
-  await nextTick()
-  draw()
-}
+const lifestyleTags = computed(() => {
+  if (!portrait.value) return []
+  const tags = []
+  if (portrait.value.foodAdventure >= 65) tags.push('饮食探索')
+  if (portrait.value.foodSocial >= 65) tags.push('聚餐分享')
+  if (portrait.value.travelAdventure >= 65) tags.push('旅行探索')
+  if (portrait.value.travelPlanning >= 65) tags.push('计划稳定')
+  if (portrait.value.socialEnergy >= 65) tags.push('社交能量')
+  return tags.length ? tags : ['轻量尝试', '稳定节奏']
+})
 
 function draw() {
-  if (!chartEl.value || !report.value) return
+  if (!chartEl.value || !portrait.value) return
   chart?.dispose()
   chart = echarts.init(chartEl.value)
   chart.setOption({
     tooltip: {},
     radar: {
-      indicator: report.value.indicators,
+      indicator: dimensionCards.value.map((item) => ({ name: item.name, max: 100 })),
       radius: '68%',
-      axisName: { color: '#243036' },
-      splitArea: { areaStyle: { color: ['#f4f8f6', '#ffffff'] } }
+      axisName: { color: '#243036' }
     },
     series: [
       {
         type: 'radar',
-        data: [{ value: report.value.radarValues, name: '性格得分' }],
-        areaStyle: { color: 'rgba(36, 123, 117, 0.24)' },
+        data: [{ value: dimensionCards.value.map((item) => item.score), name: '画像分数' }],
+        areaStyle: { color: 'rgba(36, 123, 117, 0.22)' },
         lineStyle: { color: '#247b75', width: 3 },
         itemStyle: { color: '#247b75' }
       }
@@ -61,115 +65,108 @@ function draw() {
   })
 }
 
-async function createShare() {
-  error.value = ''
-  notice.value = ''
-  try {
-    const result = await reportApi.share()
-    notice.value = `分享链接已复制：${result.url}`
-    await navigator.clipboard?.writeText(result.url)
-    shares.value = await reportApi.shares()
-  } catch (err) {
-    error.value = (err as Error).message
-  }
-}
-
-async function copyShare(url: string) {
+async function copyDemoLink() {
+  const url = `${location.origin}/report?demo=true`
   await navigator.clipboard?.writeText(url)
-  notice.value = `分享链接已复制：${url}`
+  notice.value = '示例报告链接已复制。'
 }
 
-async function revokeShare(id: number) {
-  await reportApi.revokeShare(id)
-  shares.value = await reportApi.shares()
-  notice.value = '分享链接已撤销'
+function resize() {
+  chart?.resize()
 }
 
-async function exportPng() {
-  if (!reportEl.value) return
-  const canvas = await html2canvas(reportEl.value, { backgroundColor: '#ffffff' })
-  const link = document.createElement('a')
-  link.download = '性格雷达报告.png'
-  link.href = canvas.toDataURL('image/png')
-  link.click()
-}
+watch(portrait, async () => {
+  await nextTick()
+  draw()
+})
 
-onMounted(load)
-window.addEventListener('resize', () => chart?.resize())
+onMounted(async () => {
+  await nextTick()
+  draw()
+  window.addEventListener('resize', resize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', resize)
+  chart?.dispose()
+})
 </script>
 
 <template>
-  <section class="page">
-    <header class="page-header">
-      <div>
-        <p class="eyebrow">综合画像</p>
-        <h1>我的性格雷达报告</h1>
-        <p class="muted">报告基于最新基础性格测试生成，可查看历史快照、导出 PNG 或管理公开分享。</p>
-      </div>
+  <PageContainer
+    eyebrow="我的报告"
+    title="可解释的多维生活画像"
+    description="报告会把性格维度转化为餐饮、旅行、社交建议的依据。"
+  >
+    <template #actions>
       <div class="toolbar">
-        <button class="secondary" type="button" @click="exportPng">导出 PNG</button>
-        <button class="primary" type="button" @click="createShare">生成分享</button>
+        <RouterLink class="button secondary" to="/tests/personality">重新测试</RouterLink>
+        <RouterLink class="button" to="/recommendations">进入推荐</RouterLink>
       </div>
-    </header>
+    </template>
 
-    <div v-if="error" class="error">{{ error }}</div>
     <div v-if="notice" class="notice">{{ notice }}</div>
 
-    <section v-if="report" ref="reportEl" class="panel">
-      <div class="grid two">
+    <EmptyState
+      v-if="!portrait"
+      title="你还没有完成测试，请先完成测试后查看报告。"
+      description="完成四类测评后，这里会展示雷达图、维度解释、生活偏好标签和推荐依据。"
+      action-label="去完成测试"
+      action-to="/tests/personality"
+    />
+
+    <template v-else>
+      <section class="panel report-summary">
         <div>
-          <h2>{{ report.user.displayName }} 的多维性格画像</h2>
-          <p class="muted">生成时间：{{ formatTime(report.generatedAt) }}</p>
-          <div class="grid">
-            <div v-for="line in report.interpretations" :key="line" class="card">{{ line }}</div>
+          <p class="eyebrow">{{ isDemo ? '示例数据' : '最近一次测试' }}</p>
+          <h2>你的综合画像：{{ title }}</h2>
+          <p>{{ summary }}</p>
+          <div class="tag-row">
+            <span v-for="tag in lifestyleTags" :key="tag">{{ tag }}</span>
           </div>
         </div>
-        <div ref="chartEl" class="chart-box"></div>
-      </div>
-      <h2 style="margin-top: 18px">生活建议</h2>
-      <div class="grid two">
-        <div v-for="suggestion in report.suggestions" :key="suggestion" class="card">{{ suggestion }}</div>
-      </div>
-    </section>
+        <button class="ghost" type="button" @click="copyDemoLink">复制示例链接</button>
+      </section>
 
-    <div class="grid two" style="margin-top: 16px">
-      <section class="panel">
-        <h2>报告历史</h2>
-        <div v-if="!history.length" class="notice">暂无历史报告，完成测试后会自动生成。</div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead><tr><th>摘要</th><th>时间</th><th>操作</th></tr></thead>
-            <tbody>
-              <tr v-for="item in history" :key="item.id">
-                <td>{{ item.summary }}</td>
-                <td>{{ formatTime(item.createdAt) }}</td>
-                <td><button class="secondary" type="button" @click="openSnapshot(item)">查看</button></td>
-              </tr>
-            </tbody>
-          </table>
+      <section class="grid two report-grid">
+        <div class="panel">
+          <h2>性格雷达图</h2>
+          <div ref="chartEl" class="chart-box"></div>
+        </div>
+        <div class="panel">
+          <h2>推荐依据说明</h2>
+          <p>开放性会提高探索型餐饮、城市漫游和新社交活动的权重。</p>
+          <p>尽责性会提高计划明确、价格可控和流程稳定的推荐权重。</p>
+          <p>外向性和社交能量会影响聚餐、活动和双人适配中的互动建议。</p>
+          <p>情绪稳定性会影响系统对舒缓、低压力和恢复型场景的推荐。</p>
         </div>
       </section>
 
-      <section class="panel">
-        <h2>分享链接</h2>
-        <div v-if="!shares.length" class="notice">还没有分享链接。</div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead><tr><th>Token</th><th>状态</th><th>过期时间</th><th>操作</th></tr></thead>
-            <tbody>
-              <tr v-for="item in shares" :key="item.id">
-                <td>{{ item.token.slice(0, 10) }}...</td>
-                <td>{{ item.active ? '有效' : '已撤销' }}</td>
-                <td>{{ formatTime(item.expiresAt) }}</td>
-                <td class="row-actions">
-                  <button class="secondary" type="button" @click="copyShare(item.url)">复制</button>
-                  <button v-if="item.active" class="danger" type="button" @click="revokeShare(item.id)">撤销</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <section class="grid two">
+        <ReportDimensionCard
+          v-for="item in dimensionCards"
+          :key="item.key"
+          :name="item.name"
+          :score="item.score"
+          :explanation="item.explanation"
+          :impact="item.impact"
+        />
       </section>
-    </div>
-  </section>
+
+      <section class="grid three">
+        <article class="card">
+          <h3>饮食倾向分析</h3>
+          <p>你在饮食探索上的分数为 {{ portrait.foodAdventure }}，在聚餐分享上的分数为 {{ portrait.foodSocial }}。</p>
+        </article>
+        <article class="card">
+          <h3>旅游倾向分析</h3>
+          <p>你在旅行探索上的分数为 {{ portrait.travelAdventure }}，在计划稳定上的分数为 {{ portrait.travelPlanning }}。</p>
+        </article>
+        <article class="card">
+          <h3>社交倾向分析</h3>
+          <p>你的社交能量分数为 {{ portrait.socialEnergy }}，适合据此选择活动强度和互动密度。</p>
+        </article>
+      </section>
+    </template>
+  </PageContainer>
 </template>

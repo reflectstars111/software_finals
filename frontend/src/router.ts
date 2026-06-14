@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import HomeView from './views/HomeView.vue'
 import DashboardView from './views/DashboardView.vue'
 import LoginView from './views/LoginView.vue'
 import TestView from './views/TestView.vue'
@@ -13,7 +14,8 @@ import ShareView from './views/ShareView.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: DashboardView, meta: { auth: true } },
+    { path: '/', component: HomeView },
+    { path: '/dashboard', component: DashboardView, meta: { auth: true } },
     { path: '/login', component: LoginView },
     { path: '/tests/:type?', component: TestView, meta: { auth: true } },
     { path: '/report', component: ReportView, meta: { auth: true } },
@@ -27,9 +29,9 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  if (to.path === '/report' && to.query.demo === 'true') return true
   if (to.meta.auth && !auth.isAuthed) return '/login'
   if (to.meta.admin && !auth.isAdmin) return '/'
 })
 
 export default router
-

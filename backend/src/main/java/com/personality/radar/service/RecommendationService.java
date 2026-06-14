@@ -44,6 +44,7 @@ public class RecommendationService {
         this.rules = rules;
     }
 
+    @Transactional(readOnly = true)
     public List<ApiDtos.RecommendationResponse> recommend(UserAccount user, String sceneValue) {
         SceneType scene = EnumParser.sceneType(sceneValue);
         TestResult result = results.findFirstByUserAndTypeOrderByCreatedAtDesc(user, TestType.PERSONALITY)

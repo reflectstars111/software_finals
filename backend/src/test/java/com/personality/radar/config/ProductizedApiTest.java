@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personality.radar.dto.ApiDtos;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -53,6 +54,54 @@ class ProductizedApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(reportId))
                 .andExpect(jsonPath("$.data.report.user.phone").value("13900000001"));
+    }
+
+    @Test
+    void seededQuestionsCanBeListedWithOptionsAndReadableCopy() throws Exception {
+        String token = login("13900000001", "User123456");
+
+        mockMvc.perform(get("/api/questions")
+                        .param("type", "personality")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(14))
+                .andExpect(jsonPath("$.data[0].content").value("看到微信群突然出现 99+ 未读时，我会想立刻点开加入聊天。"))
+                .andExpect(jsonPath("$.data[0].options.length()").value(5))
+                .andExpect(jsonPath("$.data[0].options[4].content").value("非常同意"))
+                .andExpect(jsonPath("$.data[0].options[4].weights.EXTRAVERSION").value(5));
+
+        mockMvc.perform(get("/api/questions")
+                        .param("type", "food")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(10));
+
+        mockMvc.perform(get("/api/questions")
+                        .param("type", "travel")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(10));
+
+        mockMvc.perform(get("/api/questions")
+                        .param("type", "social")
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(10))
+                .andExpect(jsonPath("$.data[0].content").value("在线下活动遇到很对脾气的人时，我愿意主动加联系方式。"));
+    }
+
+    @Test
+    void seededRecommendationsCanBeListedWithTagsForEveryScene() throws Exception {
+        String token = login("13900000001", "User123456");
+
+        for (String scene : List.of("food", "travel", "social")) {
+            mockMvc.perform(get("/api/recommendations")
+                            .param("scene", scene)
+                            .header("Authorization", bearer(token)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(4))
+                    .andExpect(jsonPath("$.data[0].tags.length()", greaterThanOrEqualTo(1)));
+        }
     }
 
     @Test

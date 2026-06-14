@@ -5,7 +5,7 @@ public enum PersonalityDimension {
     CONSCIENTIOUSNESS("尽责性"),
     EXTRAVERSION("外向性"),
     AGREEABLENESS("宜人性"),
-    NEUROTICISM("神经质");
+    NEUROTICISM("情绪敏感度");
 
     private final String label;
 
@@ -17,4 +17,3 @@ public enum PersonalityDimension {
         return label;
     }
 }
-

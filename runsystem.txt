@@ -1,0 +1,2 @@
+cd D:\software\finals\infra
+powershell -ExecutionPolicy Bypass -File .\reactivate-default-users.ps1

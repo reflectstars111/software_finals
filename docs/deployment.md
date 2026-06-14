@@ -41,6 +41,54 @@ docker compose up --build
 - `CORS_ALLOWED_ORIGINS`
 - `PUBLIC_BASE_URL`
 
+## 本机临时服务器一键启动
+
+本机临时服务器推荐链路：
+
+```text
+Cloudflare Tunnel -> Caddy :8090 -> frontend/dist + /api -> backend :8080
+```
+
+在项目根目录执行：
+
+```powershell
+.\deploy\start-temp-server.ps1
+```
+
+脚本会依次完成：
+
+- 构建 `frontend/dist`
+- `docker compose up -d --build` 启动 MySQL、Redis、后端
+- 校验并后台启动 Caddy
+- 后台启动 `cloudflared tunnel run personality-radar`
+
+访问地址：
+
+- 本机：`http://127.0.0.1:8090`
+- 公网：`https://app.reflectstars.dev`
+
+停止临时服务器：
+
+```powershell
+.\deploy\stop-temp-server.ps1
+```
+
+如果只想停 Caddy 和 Tunnel，保留 Docker 后端：
+
+```powershell
+.\deploy\stop-temp-server.ps1 -KeepDocker
+```
+
+常用参数：
+
+```powershell
+.\deploy\start-temp-server.ps1 -SkipNpmInstall
+.\deploy\start-temp-server.ps1 -SkipFrontendBuild
+.\deploy\start-temp-server.ps1 -SkipTunnel
+```
+
+运行日志位于 `deploy/runtime/logs/`。
+
 正式对外发布前建议显式设置 `JWT_SECRET`，不要依赖本地开发默认值：
 
 ```powershell
@@ -75,6 +123,23 @@ npm run dev
 前端开发地址：`http://127.0.0.1:5173`。
 
 Vite 已配置 `/api` 代理到 `http://127.0.0.1:8080`。
+
+## 前端验收命令
+
+在普通本机 PowerShell 中执行：
+
+```powershell
+cd D:\software\finals\frontend
+npm test
+npm run build
+```
+
+预期结果：
+
+- `npm test` 应显示所有 Vitest 用例通过，包括首页、登录、工作台、后台和核心产品逻辑测试。
+- `npm run build` 应完成 `vue-tsc -b` 和 `vite build`，并生成 `frontend/dist/`。
+
+如果在受限执行环境中看到 `spawn EPERM`，通常表示该环境禁止 Vite/Vitest 启动 esbuild 子进程；请回到本机 PowerShell 或管理员 PowerShell 复验。
 
 ## 本机 Maven 验证命令
 

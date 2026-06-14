@@ -44,9 +44,9 @@ function useAdmin() {
         <h1>{{ mode === 'login' ? '登录' : '注册' }}</h1>
         <p class="muted">默认演示用户：13900000001 / User123456</p>
       </div>
-      <div class="segmented full" style="grid-template-columns: 1fr 1fr">
-        <button :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button>
-        <button :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button>
+      <div class="segmented full auth-mode-switch">
+        <button type="button" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button>
+        <button type="button" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button>
       </div>
       <div v-if="error" class="error">{{ error }}</div>
       <form @submit.prevent="submit">
@@ -62,10 +62,10 @@ function useAdmin() {
           <label>昵称</label>
           <input v-model="displayName" placeholder="你的展示昵称" />
         </div>
-        <button class="primary full" :disabled="loading" type="submit">{{ loading ? '处理中' : '进入系统' }}</button>
+        <button class="primary full" :disabled="loading" type="submit">{{ loading ? '处理中...' : '进入系统' }}</button>
       </form>
-      <button class="ghost full" type="button" style="margin-top: 10px" @click="useAdmin">使用管理员账号</button>
+      <button class="ghost full login-admin" type="button" @click="useAdmin">使用管理员账号</button>
+      <RouterLink class="ghost full login-back" to="/">返回首页</RouterLink>
     </div>
   </section>
 </template>
-

@@ -35,8 +35,7 @@ services:
       retries: 10
 
   backend:
-    build:
-      context: ../backend
+    image: radar-backend-runtime:latest
     container_name: radar-backend
     depends_on:
       mysql:

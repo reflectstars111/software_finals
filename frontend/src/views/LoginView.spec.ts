@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginView from './LoginView.vue'
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: vi.fn() }),
+  RouterLink: { template: '<a><slot /></a>' }
 }))
 
 describe('LoginView', () => {
@@ -14,7 +15,11 @@ describe('LoginView', () => {
   })
 
   it('renders the login form with demo account guidance', () => {
-    const wrapper = mount(LoginView)
+    const wrapper = mount(LoginView, {
+      global: {
+        stubs: { RouterLink: { template: '<a><slot /></a>' } }
+      }
+    })
 
     expect(wrapper.text()).toContain('性格雷达·生活指南')
     expect(wrapper.text()).toContain('默认演示用户：13900000001 / User123456')

@@ -8,6 +8,7 @@ import com.personality.radar.domain.TestResult;
 import com.personality.radar.domain.UserAccount;
 import com.personality.radar.dto.ApiDtos;
 import java.util.List;
+import java.util.Map;
 
 public final class DtoMapper {
     private DtoMapper() {
@@ -37,7 +38,7 @@ public final class DtoMapper {
                 option.getId(),
                 option.getLabel(),
                 option.getContent(),
-                option.getWeights());
+                Map.copyOf(option.getWeights()));
     }
 
     public static ApiDtos.TestResultResponse testResult(TestResult result) {
