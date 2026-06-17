@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import * as echarts from 'echarts'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import { reportApi } from '../api'
 import type { Report } from '../types'
+import { useRadarChart } from '../composables/useRadarChart'
 
 const route = useRoute()
 const report = ref<Report | null>(null)
 const error = ref('')
 const loading = ref(true)
 const chartEl = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
+const { draw: drawChartFn, resize } = useRadarChart(chartEl)
 
 async function load() {
   loading.value = true
   try {
     report.value = await reportApi.byToken(route.params.token as string)
     await nextTick()
-    draw()
+    drawShareChart()
   } catch (err) {
     error.value = (err as Error).message
   } finally {
@@ -27,28 +27,17 @@ async function load() {
   }
 }
 
-function draw() {
-  if (!chartEl.value || !report.value) return
-  chart?.dispose()
-  chart = echarts.init(chartEl.value)
-  chart.setOption({
+function drawShareChart() {
+  if (!report.value) return
+  drawChartFn({
     radar: { indicator: report.value.indicators, radius: '68%' },
     series: [{ type: 'radar', data: [{ value: report.value.radarValues, name: '公开画像' }] }]
   })
 }
 
-function resize() {
-  chart?.resize()
-}
-
 onMounted(() => {
   load()
   window.addEventListener('resize', resize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', resize)
-  chart?.dispose()
 })
 </script>
 

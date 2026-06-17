@@ -99,7 +99,7 @@ class ProductizedApiTest {
                             .param("scene", scene)
                             .header("Authorization", bearer(token)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.length()").value(4))
+                    .andExpect(jsonPath("$.data.length()").value(30))
                     .andExpect(jsonPath("$.data[0].tags.length()", greaterThanOrEqualTo(1)));
         }
     }

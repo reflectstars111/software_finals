@@ -85,6 +85,16 @@ public final class ApiDtos {
     public record MatchRequest(@NotBlank @Pattern(regexp = "^\\d{11}$") String friendPhone) {
     }
 
+    public record MatchByInviteRequest(@NotBlank String inviteCode) {
+    }
+
+    public record MatchInviteResponse(
+            String code,
+            Instant createdAt,
+            String status,
+            Instant expiresAt) {
+    }
+
     public record MatchResponse(
             Long id,
             UserProfileResponse owner,
@@ -94,6 +104,8 @@ public final class ApiDtos {
             List<String> advantages,
             List<String> warnings,
             List<String> advice,
+            Map<String, Integer> ownerScores,
+            Map<String, Integer> targetScores,
             Instant createdAt) {
     }
 
@@ -185,5 +197,14 @@ public final class ApiDtos {
             String label,
             int weight,
             boolean active) {
+    }
+
+    public record UserFeedbackResponse(
+            Long id,
+            String itemTitle,
+            String scene,
+            String rating,
+            String comment,
+            Instant createdAt) {
     }
 }

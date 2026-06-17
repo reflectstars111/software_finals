@@ -1,15 +1,13 @@
-import { clearProductState, loadProductState, saveProductState } from '../utils/storage'
+import { testApi, recommendationApi, matchApi, reportApi } from '../api'
 
-export async function getProfileProductData() {
-  return loadProductState()
-}
-
-export async function clearMyPortraitData() {
-  clearProductState()
-}
-
-export async function revokeAuthorization(code: string) {
-  const state = loadProductState()
-  state.invites = state.invites.map((invite) => invite.code === code ? { ...invite, status: 'revoked' } : invite)
-  saveProductState(state)
+export async function getProfileData() {
+  const [testHistory, reportSnapshots, matches, shares, feedbacks, invites] = await Promise.all([
+    testApi.history(),
+    reportApi.history(),
+    matchApi.list(),
+    reportApi.shares(),
+    recommendationApi.myFeedback(),
+    matchApi.listInvites()
+  ])
+  return { testHistory, reportSnapshots, matches, shares, feedbacks, invites }
 }

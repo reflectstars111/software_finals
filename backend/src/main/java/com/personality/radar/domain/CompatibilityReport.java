@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
+@Table(indexes = {
+    @Index(name = "idx_match_owner_created", columnList = "owner_id, created_at DESC")
+})
 public class CompatibilityReport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

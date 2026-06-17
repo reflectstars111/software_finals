@@ -10,5 +10,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     Optional<TestResult> findFirstByUserAndTypeOrderByCreatedAtDesc(UserAccount user, TestType type);
     List<TestResult> findByUserOrderByCreatedAtDesc(UserAccount user);
+    long countByType(TestType type);
 }
 

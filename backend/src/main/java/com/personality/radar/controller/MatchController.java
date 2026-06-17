@@ -29,6 +29,21 @@ public class MatchController {
         return ApiResponse.ok(matchService.create(currentUser.requireUser(), request));
     }
 
+    @PostMapping("/invite")
+    public ApiResponse<ApiDtos.MatchInviteResponse> createInvite() {
+        return ApiResponse.ok(matchService.createInvite(currentUser.requireUser()));
+    }
+
+    @GetMapping("/invites")
+    public ApiResponse<List<ApiDtos.MatchInviteResponse>> listInvites() {
+        return ApiResponse.ok(matchService.listInvites(currentUser.requireUser()));
+    }
+
+    @PostMapping("/by-invite")
+    public ApiResponse<ApiDtos.MatchResponse> createByInvite(@Valid @RequestBody ApiDtos.MatchByInviteRequest request) {
+        return ApiResponse.ok(matchService.createByInvite(currentUser.requireUser(), request));
+    }
+
     @GetMapping
     public ApiResponse<List<ApiDtos.MatchResponse>> list() {
         return ApiResponse.ok(matchService.list(currentUser.requireUser()));

@@ -35,5 +35,10 @@ public class RecommendationController {
         recommendationService.feedback(currentUser.requireUser(), id, request);
         return ApiResponse.ok();
     }
+
+    @GetMapping("/feedback/me")
+    public ApiResponse<List<ApiDtos.UserFeedbackResponse>> myFeedback() {
+        return ApiResponse.ok(recommendationService.myFeedback(currentUser.requireUser()));
+    }
 }
 

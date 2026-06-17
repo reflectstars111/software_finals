@@ -29,7 +29,7 @@ public final class EnumParser {
     private static <E extends Enum<E>> E parse(Class<E> type, String value, String message) {
         try {
             return Enum.valueOf(type, value.trim().toUpperCase());
-        } catch (RuntimeException ex) {
+        } catch (IllegalArgumentException ex) {
             throw new BusinessException(400, message);
         }
     }

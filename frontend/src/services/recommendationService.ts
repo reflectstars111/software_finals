@@ -1,24 +1,14 @@
-import type { FeedbackValue, RecommendationType } from '../productTypes'
-import { buildRecommendations } from '../utils/recommendation'
-import { loadProductState, saveProductState } from '../utils/storage'
+import { recommendationApi } from '../api'
+import type { Recommendation, UserFeedback } from '../types'
 
-export async function listPersonalizedRecommendations(type: RecommendationType) {
-  const state = loadProductState()
-  if (!state.portrait) return []
-  return buildRecommendations(type, state.portrait, state.feedbacks)
+export async function listRecommendations(scene: string) {
+  return recommendationApi.list(scene) as Promise<Recommendation[]>
 }
 
-export async function saveRecommendationFeedback(id: string, title: string, type: RecommendationType, feedback: FeedbackValue) {
-  const state = loadProductState()
-  state.feedbacks = [
-    {
-      recommendationId: id,
-      recommendationTitle: title,
-      recommendationType: type,
-      feedback,
-      createdAt: new Date().toISOString()
-    },
-    ...state.feedbacks
-  ].slice(0, 40)
-  saveProductState(state)
+export async function submitFeedback(id: number, rating: string, comment?: string) {
+  return recommendationApi.feedback(id, { rating, comment })
+}
+
+export async function getMyFeedback() {
+  return recommendationApi.myFeedback() as Promise<UserFeedback[]>
 }

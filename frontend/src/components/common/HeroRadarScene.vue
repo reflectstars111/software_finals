@@ -2,7 +2,6 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let frame = 0
 let raf = 0
 
 function draw(time: number) {
@@ -30,96 +29,114 @@ function draw(time: number) {
   const w = rect.width
   const h = rect.height
   const cx = w * 0.68
-  const cy = h * 0.48
-  const radius = Math.min(w, h) * 0.28
-  const pulse = Math.sin(time / 1300) * 0.04 + 1
-  const colors = ['#247b75', '#4556a5', '#d96045', '#b8892f', '#1d625d']
-  const labels = ['开放', '计划', '社交', '协调', '稳定']
+  const cy = h * 0.45
+  const radius = Math.min(w, h) * 0.26
+  const t = time / 1000
+  const pulse = Math.sin(time / 1800) * 0.03 + 1
 
-  const gradient = ctx.createLinearGradient(0, 0, w, h)
-  gradient.addColorStop(0, '#f8fbf8')
-  gradient.addColorStop(0.52, '#edf4f1')
-  gradient.addColorStop(1, '#eef0fb')
-  ctx.fillStyle = gradient
+  // Deep field gradient
+  const bg = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius * 2.5)
+  bg.addColorStop(0, '#1a2740')
+  bg.addColorStop(0.5, '#131b2e')
+  bg.addColorStop(1, '#0d1522')
+  ctx.fillStyle = bg
   ctx.fillRect(0, 0, w, h)
 
-  ctx.strokeStyle = 'rgba(69, 86, 165, 0.08)'
-  ctx.lineWidth = 1
-  for (let i = -8; i < 16; i += 1) {
-    const offset = i * 90 + Math.sin(time / 2200 + i) * 8
-    ctx.beginPath()
-    ctx.moveTo(offset, h)
-    ctx.lineTo(offset + h * 0.72, 0)
-    ctx.stroke()
+  // Subtle grid
+  ctx.strokeStyle = 'rgba(108, 204, 160, 0.04)'
+  ctx.lineWidth = 0.5
+  const gridSize = 52
+  for (let x = -gridSize + ((t * 8) % gridSize); x < w + gridSize; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h * 0.45, h); ctx.stroke()
+  }
+  for (let y = 0; y < h; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
   }
 
-  ctx.strokeStyle = 'rgba(36, 48, 54, 0.08)'
-  ctx.lineWidth = 1
-  for (let ring = 1; ring <= 5; ring += 1) {
+  // Concentric radar rings
+  for (let ring = 1; ring <= 5; ring++) {
+    const alpha = 0.06 + ring * 0.015
+    ctx.strokeStyle = `rgba(108, 204, 160, ${alpha})`
+    ctx.lineWidth = ring === 3 ? 1.2 : 0.6
     ctx.beginPath()
-    for (let i = 0; i <= 5; i += 1) {
-      const angle = -Math.PI / 2 + (i / 5) * Math.PI * 2
+    for (let i = 0; i <= 60; i++) {
+      const angle = (i / 60) * Math.PI * 2
       const r = (radius * ring * pulse) / 5
       const x = cx + Math.cos(angle) * r
       const y = cy + Math.sin(angle) * r
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
     }
     ctx.stroke()
   }
 
-  const points = [0.84, 0.68, 0.76, 0.72, 0.64].map((value, i) => {
-    const angle = -Math.PI / 2 + (i / 5) * Math.PI * 2
+  // Sweeping beam (rotating wedge)
+  const sweepAngle = (t * 0.35) % (Math.PI * 2)
+  ctx.save()
+  ctx.globalAlpha = 0.07
+  ctx.fillStyle = '#6ccca0'
+  ctx.beginPath()
+  ctx.moveTo(cx, cy)
+  ctx.arc(cx, cy, radius * 1.15, sweepAngle, sweepAngle + 0.6)
+  ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+
+  // Axis lines
+  const axes = 5
+  for (let i = 0; i < axes; i++) {
+    const angle = -Math.PI / 2 + (i / axes) * Math.PI * 2
+    ctx.strokeStyle = 'rgba(120, 135, 170, 0.15)'
+    ctx.lineWidth = 0.5
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.lineTo(cx + Math.cos(angle) * radius * 1.1, cy + Math.sin(angle) * radius * 1.1)
+    ctx.stroke()
+  }
+
+  // Dimension blips
+  const blipColors = ['#6ccca0', '#e8b44f', '#e8786a', '#a0c4f0', '#c0a0e0']
+  const labels = ['开放', '尽责', '外向', '宜人', '稳定']
+  const blipValues = [0.82, 0.64, 0.76, 0.70, 0.60]
+  const points = blipValues.map((value, i) => {
+    const angle = -Math.PI / 2 + (i / axes) * Math.PI * 2
     return {
       x: cx + Math.cos(angle) * radius * value * pulse,
       y: cy + Math.sin(angle) * radius * value * pulse,
-      angle,
-      color: colors[i],
-      label: labels[i]
+      angle, color: blipColors[i], label: labels[i]
     }
   })
 
+  // Filled polygon
   ctx.beginPath()
-  points.forEach((point, index) => {
-    if (index === 0) ctx.moveTo(point.x, point.y)
-    else ctx.lineTo(point.x, point.y)
-  })
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y))
   ctx.closePath()
-  ctx.fillStyle = 'rgba(36, 123, 117, 0.18)'
-  ctx.strokeStyle = '#247b75'
-  ctx.lineWidth = 3
+  ctx.fillStyle = 'rgba(108, 204, 160, 0.10)'
+  ctx.strokeStyle = 'rgba(108, 204, 160, 0.45)'
+  ctx.lineWidth = 2.2
   ctx.fill()
   ctx.stroke()
 
-  points.forEach((point, index) => {
-    ctx.fillStyle = point.color
-    ctx.beginPath()
-    ctx.arc(point.x, point.y, 6, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#243036'
-    ctx.font = '700 13px Microsoft YaHei, Arial'
-    ctx.fillText(point.label, cx + Math.cos(point.angle) * (radius + 28), cy + Math.sin(point.angle) * (radius + 28))
-
-    const next = points[(index + 2) % points.length]
-    ctx.strokeStyle = 'rgba(217, 96, 69, 0.16)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(point.x, point.y)
-    ctx.lineTo(next.x, next.y)
-    ctx.stroke()
+  // Blip dots + labels
+  points.forEach((p) => {
+    // Outer glow
+    ctx.fillStyle = p.color.replace(')', ', 0.25)').replace('rgb', 'rgba')
+    ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI * 2); ctx.fill()
+    // Core dot
+    ctx.fillStyle = p.color
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2); ctx.fill()
+    // Label
+    ctx.fillStyle = '#c8d0e0'
+    ctx.font = '600 12px "PingFang SC", "Microsoft YaHei", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(p.label, cx + Math.cos(p.angle) * (radius * 1.25), cy + Math.sin(p.angle) * (radius * 1.25) + 4)
   })
 
   ctx.restore()
   raf = requestAnimationFrame(draw)
 }
 
-onMounted(() => {
-  raf = requestAnimationFrame(draw)
-})
-
-onUnmounted(() => {
-  cancelAnimationFrame(raf)
-})
+onMounted(() => { raf = requestAnimationFrame(draw) })
+onUnmounted(() => { cancelAnimationFrame(raf) })
 </script>
 
 <template>

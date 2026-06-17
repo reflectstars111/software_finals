@@ -331,7 +331,7 @@ function Invoke-DockerComposeRefresh {
     Push-Location $BackendDir
     try {
       Invoke-Checked "Build backend jar with local Maven" {
-        & $MavenExe "-DskipTests" "package"
+        & $MavenExe "-DskipTests" "clean" "package"
       }
     } finally {
       Pop-Location
@@ -344,7 +344,7 @@ function Invoke-DockerComposeRefresh {
   $oldBuildKit = Set-TemporaryEnv -Name "DOCKER_BUILDKIT" -Value "0"
   try {
     Invoke-Checked "Build backend runtime image from local jar" {
-      docker build --pull=false -t infra-backend -f $RuntimeDockerfile $BackendDir
+      docker build --pull=false -t radar-backend-runtime -f $RuntimeDockerfile $BackendDir
     }
   } finally {
     Restore-TemporaryEnv -Name "DOCKER_BUILDKIT" -Value $oldBuildKit
@@ -366,6 +366,15 @@ Require-Path $BackendDir "Backend directory"
 Require-Path $InfraDir "Infra directory"
 Require-Command docker
 Assert-DockerDaemon
+
+# Auto-generate JWT_SECRET if not already set (cryptographically secure)
+if (-not (Test-Path env:JWT_SECRET) -or [string]::IsNullOrWhiteSpace($env:JWT_SECRET)) {
+  $bytes = New-Object byte[] 48
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  $rng.GetBytes($bytes)
+  $env:JWT_SECRET = [Convert]::ToBase64String($bytes)
+  Write-Host "JWT_SECRET auto-generated (48 bytes, Base64)"
+}
 
 if (-not $SkipFrontendBuild) {
   Require-Command npm

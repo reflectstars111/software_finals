@@ -82,6 +82,28 @@ export interface MatchReport {
   advantages: string[]
   warnings: string[]
   advice: string[]
+  ownerScores: Record<string, number>
+  targetScores: Record<string, number>
+  createdAt: string
+}
+
+export interface MatchInvite {
+  code: string
+  createdAt: string
+  status: 'ACTIVE' | 'USED' | 'REVOKED'
+  expiresAt: string
+}
+
+export interface MatchByInviteRequest {
+  inviteCode: string
+}
+
+export interface UserFeedback {
+  id: number
+  itemTitle: string
+  scene: string
+  rating: string
+  comment?: string
   createdAt: string
 }
 

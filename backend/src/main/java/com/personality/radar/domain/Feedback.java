@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
+@Table(indexes = {
+    @Index(name = "idx_feedback_user_created", columnList = "user_id, created_at DESC")
+})
 public class Feedback {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

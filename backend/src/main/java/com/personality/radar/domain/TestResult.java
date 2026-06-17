@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
+@Table(indexes = {
+    @Index(name = "idx_test_result_user_type_created", columnList = "user_id, type, created_at DESC")
+})
 public class TestResult {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

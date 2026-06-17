@@ -3,6 +3,7 @@ package com.personality.radar.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personality.radar.common.ApiResponse;
 import com.personality.radar.security.JwtAuthenticationFilter;
+import com.personality.radar.security.RateLimitFilter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/shares/*").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
+                .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

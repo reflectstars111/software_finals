@@ -157,17 +157,13 @@ public class AdminService {
     public ApiDtos.AdminDashboardResponse dashboard() {
         Map<String, Long> testsByType = new LinkedHashMap<>();
         for (TestType type : TestType.values()) {
-            testsByType.put(type.name().toLowerCase(), 0L);
+            testsByType.put(type.name().toLowerCase(), testResults.countByType(type));
         }
-        testResults.findAll().forEach(result ->
-                testsByType.compute(result.getType().name().toLowerCase(), (ignored, count) -> count == null ? 1 : count + 1));
 
         Map<String, Long> feedbackByRating = new LinkedHashMap<>();
         for (FeedbackRating rating : FeedbackRating.values()) {
-            feedbackByRating.put(rating.name().toLowerCase(), 0L);
+            feedbackByRating.put(rating.name().toLowerCase(), feedbacks.countByRating(rating));
         }
-        feedbacks.findAll().forEach(feedback ->
-                feedbackByRating.compute(feedback.getRating().name().toLowerCase(), (ignored, count) -> count == null ? 1 : count + 1));
 
         Map<String, Long> recommendationsByScene = items.findAll().stream()
                 .collect(Collectors.groupingBy(item -> item.getScene().name().toLowerCase(), LinkedHashMap::new, Collectors.counting()));
@@ -194,7 +190,11 @@ public class AdminService {
             user.setActive(request.active());
         }
         if (request.role() != null && !request.role().isBlank()) {
-            user.setRole(Role.valueOf(request.role().trim().toUpperCase()));
+            try {
+                user.setRole(Role.valueOf(request.role().trim().toUpperCase()));
+            } catch (IllegalArgumentException ex) {
+                throw new BusinessException(400, "无效的角色类型，可选值：USER, ADMIN");
+            }
         }
         users.save(user);
         log(admin, "UPDATE_USER", user.getPhone());

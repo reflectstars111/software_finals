@@ -8,6 +8,7 @@ import com.personality.radar.repository.UserRepository;
 import com.personality.radar.security.JwtService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,15 +27,18 @@ public class AuthService {
 
     @Transactional
     public ApiDtos.AuthResponse register(ApiDtos.RegisterRequest request) {
-        if (users.existsByPhone(request.phone())) {
-            throw new BusinessException(409, "手机号已注册");
-        }
+        // Rely on DB unique constraint instead of pre-check to avoid TOCTOU race
+        // Two concurrent registrations with the same phone: one succeeds, one gets 409
         UserAccount user = new UserAccount();
         user.setPhone(request.phone());
         user.setDisplayName(request.displayName());
         user.setPasswordHash(encoder.encode(request.password()));
         user.setRole(Role.USER);
-        users.save(user);
+        try {
+            users.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessException(409, "手机号已注册");
+        }
         return authResponse(user);
     }
 

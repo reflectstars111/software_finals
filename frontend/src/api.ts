@@ -5,6 +5,7 @@ import type {
   AdminUser,
   ApiResponse,
   AuthResponse,
+  MatchInvite,
   MatchReport,
   Question,
   Recommendation,
@@ -13,6 +14,7 @@ import type {
   ReportSnapshot,
   ShareLinkSummary,
   TestResult,
+  UserFeedback,
   UserProfile
 } from './types'
 
@@ -73,13 +75,17 @@ export const reportApi = {
 export const recommendationApi = {
   list: (scene: string) => dataOf<Recommendation[]>(api.get('/recommendations', { params: { scene } })),
   feedback: (id: number, payload: { rating: string; comment?: string }) =>
-    dataOf<void>(api.post(`/recommendations/${id}/feedback`, payload))
+    dataOf<void>(api.post(`/recommendations/${id}/feedback`, payload)),
+  myFeedback: () => dataOf<UserFeedback[]>(api.get('/recommendations/feedback/me'))
 }
 
 export const matchApi = {
   create: (friendPhone: string) => dataOf<MatchReport>(api.post('/matches', { friendPhone })),
   list: () => dataOf<MatchReport[]>(api.get('/matches')),
-  get: (id: number) => dataOf<MatchReport>(api.get(`/matches/${id}`))
+  get: (id: number) => dataOf<MatchReport>(api.get(`/matches/${id}`)),
+  createInvite: () => dataOf<MatchInvite>(api.post('/matches/invite')),
+  listInvites: () => dataOf<MatchInvite[]>(api.get('/matches/invites')),
+  matchByInvite: (inviteCode: string) => dataOf<MatchReport>(api.post('/matches/by-invite', { inviteCode }))
 }
 
 export const adminApi = {

@@ -88,4 +88,17 @@ public class RecommendationService {
             preferences.save(preference);
         }
     }
+
+    @Transactional(readOnly = true)
+    public List<ApiDtos.UserFeedbackResponse> myFeedback(UserAccount user) {
+        return feedbacks.findByUserOrderByCreatedAtDesc(user).stream()
+                .map(f -> new ApiDtos.UserFeedbackResponse(
+                        f.getId(),
+                        f.getItem().getTitle(),
+                        f.getItem().getScene().name(),
+                        f.getRating().name(),
+                        f.getComment(),
+                        f.getCreatedAt()))
+                .toList();
+    }
 }

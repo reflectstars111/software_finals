@@ -1,6 +1,9 @@
 package com.personality.radar.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,10 +13,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> business(BusinessException ex) {
         return ApiResponse.fail(ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<Void> dataIntegrity(DataIntegrityViolationException ex) {
+        log.debug("Data integrity violation: {}", ex.getMessage());
+        return ApiResponse.fail(409, "数据冲突，该记录已存在或与其他数据关联");
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
@@ -31,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> unexpected(Exception ex) {
+        log.error("Unexpected error", ex);
         return ApiResponse.fail(500, "系统繁忙，请稍后再试");
     }
 }

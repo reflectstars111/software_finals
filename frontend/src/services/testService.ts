@@ -1,30 +1,20 @@
-import { testModules } from '../data/mockQuestions'
-import type { TestAnswer } from '../productTypes'
-import { portraitTitle, scoreUserPortrait } from '../utils/scoring'
-import { loadProductState, saveProductState } from '../utils/storage'
+import { testApi } from '../api'
+import type { Question, TestResult } from '../types'
 
-export async function loadTestModules() {
-  return testModules
+export async function loadQuestions(type?: string) {
+  const allTypes = ['personality', 'food', 'travel', 'social']
+  if (type) {
+    const questions = await testApi.questions(type)
+    return { [type]: questions } as Record<string, Question[]>
+  }
+  const results = await Promise.all(allTypes.map((t) => testApi.questions(t)))
+  return Object.fromEntries(allTypes.map((t, i) => [t, results[i]]))
 }
 
-export async function saveAssessment(answers: TestAnswer[]) {
-  const state = loadProductState()
-  const portrait = scoreUserPortrait(answers)
-  const createdAt = new Date().toISOString()
-  state.answers = Object.fromEntries(answers.map((answer) => [answer.questionId, answer.value]))
-  state.portrait = portrait
-  state.lastTestAt = createdAt
-  state.testHistory = [
-    {
-      id: `test-${Date.now()}`,
-      createdAt,
-      type: '综合测评',
-      portraitTitle: portraitTitle(portrait),
-      portrait,
-      canViewReport: true
-    },
-    ...state.testHistory
-  ].slice(0, 20)
-  saveProductState(state)
-  return portrait
+export async function submitTest(type: string, answers: { questionId: number; optionIds: number[] }[]) {
+  return testApi.submit({ type, answers })
+}
+
+export async function getTestHistory() {
+  return testApi.history()
 }

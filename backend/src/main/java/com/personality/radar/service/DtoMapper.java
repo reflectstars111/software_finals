@@ -45,7 +45,7 @@ public final class DtoMapper {
         return new ApiDtos.TestResultResponse(
                 result.getId(),
                 result.getType().name().toLowerCase(),
-                result.getScores(),
+                new java.util.HashMap<>(result.getScores()),
                 result.getCreatedAt());
     }
 

@@ -1,94 +1,100 @@
 <script setup lang="ts">
-import * as echarts from 'echarts'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
+import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
-import ReportDimensionCard from '../components/report/ReportDimensionCard.vue'
-import { demoPortrait } from '../data/mockUsers'
-import type { UserPortrait } from '../productTypes'
-import { dimensionExplanation, personalityDimensionLabels, portraitSummary, portraitTitle } from '../utils/scoring'
-import { loadProductState } from '../utils/storage'
+import type { Report } from '../types'
+import { getMyReport, shareReport } from '../services/reportService'
+import { DISPLAY_LABELS, dimensionExplanation, portraitTitle, portraitSummary } from '../utils/dimensions'
+import type { DimensionKey } from '../utils/dimensions'
+import { useRadarChart } from '../composables/useRadarChart'
 
 const route = useRoute()
 const chartEl = ref<HTMLDivElement | null>(null)
+const { draw, resize } = useRadarChart(chartEl)
+const report = ref<Report | null>(null)
+const loading = ref(true)
+const error = ref('')
 const notice = ref('')
-let chart: echarts.ECharts | null = null
+const shareUrl = ref('')
 
 const isDemo = computed(() => route.query.demo === 'true')
-const state = computed(() => loadProductState())
-const portrait = computed<UserPortrait | null>(() => isDemo.value ? demoPortrait : state.value.portrait)
-const title = computed(() => portrait.value ? portraitTitle(portrait.value) : '')
-const summary = computed(() => portrait.value ? portraitSummary(portrait.value) : '')
+const title = computed(() => report.value?.scores ? portraitTitle(report.value.scores) : '')
+const summary = computed(() => report.value?.scores ? portraitSummary(report.value.scores) : '')
 
-const dimensionCards = computed(() => {
-  if (!portrait.value) return []
-  return (Object.keys(personalityDimensionLabels) as Array<keyof typeof personalityDimensionLabels>).map((key) => ({
+const personalityKeys: DimensionKey[] = ['OPENNESS', 'CONSCIENTIOUSNESS', 'EXTRAVERSION', 'AGREEABLENESS', 'NEUROTICISM']
+const lifestyleKeys: DimensionKey[] = ['FOOD_ADVENTURE', 'FOOD_SOCIAL', 'TRAVEL_ADVENTURE', 'TRAVEL_PLANNING', 'SOCIAL_ENERGY']
+
+const personalityCards = computed(() => {
+  if (!report.value?.scores) return []
+  return personalityKeys.map((key) => ({
     key,
-    name: personalityDimensionLabels[key],
-    score: portrait.value![key],
-    ...dimensionExplanation(key, portrait.value![key])
+    name: DISPLAY_LABELS[key],
+    score: report.value!.scores[key] ?? 50,
+    ...dimensionExplanation(key, report.value!.scores[key] ?? 50)
   }))
 })
 
-const lifestyleTags = computed(() => {
-  if (!portrait.value) return []
-  const tags = []
-  if (portrait.value.foodAdventure >= 65) tags.push('饮食探索')
-  if (portrait.value.foodSocial >= 65) tags.push('聚餐分享')
-  if (portrait.value.travelAdventure >= 65) tags.push('旅行探索')
-  if (portrait.value.travelPlanning >= 65) tags.push('计划稳定')
-  if (portrait.value.socialEnergy >= 65) tags.push('社交能量')
-  return tags.length ? tags : ['轻量尝试', '稳定节奏']
+const lifestyleCards = computed(() => {
+  if (!report.value?.scores) return []
+  return lifestyleKeys.map((key) => ({
+    key,
+    name: DISPLAY_LABELS[key],
+    score: report.value!.scores[key] ?? 50,
+    ...dimensionExplanation(key, report.value!.scores[key] ?? 50)
+  }))
 })
 
-function draw() {
-  if (!chartEl.value || !portrait.value) return
-  chart?.dispose()
-  chart = echarts.init(chartEl.value)
-  chart.setOption({
+function drawChart() {
+  if (!report.value) return
+  draw({
     tooltip: {},
     radar: {
-      indicator: dimensionCards.value.map((item) => ({ name: item.name, max: 100 })),
-      radius: '68%',
+      indicator: personalityCards.value.map((c) => ({ name: c.name, max: 100 })),
+      radius: '65%',
       axisName: { color: '#243036' }
     },
-    series: [
-      {
-        type: 'radar',
-        data: [{ value: dimensionCards.value.map((item) => item.score), name: '画像分数' }],
-        areaStyle: { color: 'rgba(36, 123, 117, 0.22)' },
-        lineStyle: { color: '#247b75', width: 3 },
-        itemStyle: { color: '#247b75' }
-      }
-    ]
+    series: [{
+      type: 'radar',
+      data: [{ value: personalityCards.value.map((c) => c.score), name: '画像分数' }],
+      areaStyle: { color: 'rgba(36, 123, 117, 0.22)' },
+      lineStyle: { color: '#247b75', width: 3 },
+      itemStyle: { color: '#247b75' }
+    }]
   })
 }
 
-async function copyDemoLink() {
-  const url = `${location.origin}/report?demo=true`
-  await navigator.clipboard?.writeText(url)
-  notice.value = '示例报告链接已复制。'
+async function doShare() {
+  try {
+    const result = await shareReport()
+    const url = `${location.origin}/share/${result.token}`
+    shareUrl.value = url
+    await navigator.clipboard?.writeText(url)
+    notice.value = '分享链接已生成并复制到剪贴板！'
+  } catch (err) {
+    error.value = (err as Error).message || '生成分享链接失败'
+  }
 }
 
-function resize() {
-  chart?.resize()
+async function load() {
+  loading.value = true
+  error.value = ''
+  try {
+    report.value = await getMyReport()
+  } catch (err) {
+    error.value = (err as Error).message || '报告加载失败'
+  } finally {
+    loading.value = false
+  }
 }
 
-watch(portrait, async () => {
-  await nextTick()
-  draw()
-})
-
+watch(report, async () => { await nextTick(); drawChart() })
 onMounted(async () => {
+  await load()
   await nextTick()
-  draw()
+  drawChart()
   window.addEventListener('resize', resize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', resize)
-  chart?.dispose()
 })
 </script>
 
@@ -96,21 +102,24 @@ onUnmounted(() => {
   <PageContainer
     eyebrow="我的报告"
     title="可解释的多维生活画像"
-    description="报告会把性格维度转化为餐饮、旅行、社交建议的依据。"
+    description="报告由后端基于你的测试答案自动生成，包含10个维度的分析和个性化建议。"
   >
     <template #actions>
       <div class="toolbar">
         <RouterLink class="button secondary" to="/tests/personality">重新测试</RouterLink>
         <RouterLink class="button" to="/recommendations">进入推荐</RouterLink>
+        <button v-if="report" class="ghost" type="button" @click="doShare">分享报告</button>
       </div>
     </template>
 
+    <div v-if="error" class="error">{{ error }}</div>
     <div v-if="notice" class="notice">{{ notice }}</div>
+    <LoadingState v-if="loading" message="正在生成报告..." />
 
     <EmptyState
-      v-if="!portrait"
+      v-else-if="!report"
       title="你还没有完成测试，请先完成测试后查看报告。"
-      description="完成四类测评后，这里会展示雷达图、维度解释、生活偏好标签和推荐依据。"
+      description="完成四类测评后，这里会展示雷达图、10维维度解释、生活偏好标签和个性化建议。"
       action-label="去完成测试"
       action-to="/tests/personality"
     />
@@ -118,14 +127,10 @@ onUnmounted(() => {
     <template v-else>
       <section class="panel report-summary">
         <div>
-          <p class="eyebrow">{{ isDemo ? '示例数据' : '最近一次测试' }}</p>
+          <p class="eyebrow">{{ isDemo ? '示例数据' : '最近一次测试报告' }}</p>
           <h2>你的综合画像：{{ title }}</h2>
           <p>{{ summary }}</p>
-          <div class="tag-row">
-            <span v-for="tag in lifestyleTags" :key="tag">{{ tag }}</span>
-          </div>
         </div>
-        <button class="ghost" type="button" @click="copyDemoLink">复制示例链接</button>
       </section>
 
       <section class="grid two report-grid">
@@ -135,37 +140,41 @@ onUnmounted(() => {
         </div>
         <div class="panel">
           <h2>推荐依据说明</h2>
-          <p>开放性会提高探索型餐饮、城市漫游和新社交活动的权重。</p>
+          <p>开放性会提高探索型餐饮、城市漫游和新社交活动的推荐权重。</p>
           <p>尽责性会提高计划明确、价格可控和流程稳定的推荐权重。</p>
           <p>外向性和社交能量会影响聚餐、活动和双人适配中的互动建议。</p>
+          <p>饮食探索和旅行计划等维度直接影响对应场景的推荐排序。</p>
           <p>情绪稳定性会影响系统对舒缓、低压力和恢复型场景的推荐。</p>
         </div>
       </section>
 
-      <section class="grid two">
-        <ReportDimensionCard
-          v-for="item in dimensionCards"
-          :key="item.key"
-          :name="item.name"
-          :score="item.score"
-          :explanation="item.explanation"
-          :impact="item.impact"
-        />
+      <section class="grid two section-gap">
+        <article v-for="card in personalityCards" :key="card.key" class="card dimension-card">
+          <div class="split">
+            <h3>{{ card.name }}</h3>
+            <strong>{{ card.score }} / 100</strong>
+          </div>
+          <div class="mini-meter"><span :style="{ width: `${card.score}%` }"></span></div>
+          <p>{{ card.explanation }}</p>
+          <p class="muted">{{ card.impact }}</p>
+        </article>
       </section>
 
-      <section class="grid three">
-        <article class="card">
-          <h3>饮食倾向分析</h3>
-          <p>你在饮食探索上的分数为 {{ portrait.foodAdventure }}，在聚餐分享上的分数为 {{ portrait.foodSocial }}。</p>
+      <section class="grid two section-gap">
+        <article v-for="card in lifestyleCards" :key="card.key" class="card dimension-card">
+          <div class="split">
+            <h3>{{ card.name }}</h3>
+            <strong>{{ card.score }} / 100</strong>
+          </div>
+          <div class="mini-meter"><span :style="{ width: `${card.score}%` }"></span></div>
+          <p>{{ card.explanation }}</p>
+          <p class="muted">{{ card.impact }}</p>
         </article>
-        <article class="card">
-          <h3>旅游倾向分析</h3>
-          <p>你在旅行探索上的分数为 {{ portrait.travelAdventure }}，在计划稳定上的分数为 {{ portrait.travelPlanning }}。</p>
-        </article>
-        <article class="card">
-          <h3>社交倾向分析</h3>
-          <p>你的社交能量分数为 {{ portrait.socialEnergy }}，适合据此选择活动强度和互动密度。</p>
-        </article>
+      </section>
+
+      <section v-if="report.suggestions.length" class="panel section-gap">
+        <h2>个性化建议</h2>
+        <p v-for="(s, i) in report.suggestions" :key="i">{{ s }}</p>
       </section>
     </template>
   </PageContainer>

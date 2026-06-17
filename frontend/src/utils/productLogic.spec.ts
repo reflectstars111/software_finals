@@ -1,77 +1,58 @@
 import { describe, expect, it } from 'vitest'
-import { testModules } from '../data/mockQuestions'
-import type { SurveyQuestion, UserPortrait } from '../productTypes'
-import { createMatchResult } from './matching'
-import { buildRecommendations, RECOMMENDATION_WEIGHTS } from './recommendation'
-import { scoreUserPortrait } from './scoring'
+import { DIMENSION_LABELS, DISPLAY_LABELS, displayScore, dimensionExplanation, portraitTitle, portraitSummary, type DimensionKey } from './dimensions'
 
-const basePortrait: UserPortrait = {
-  openness: 82,
-  conscientiousness: 64,
-  extraversion: 76,
-  agreeableness: 70,
-  emotionalStability: 58,
-  foodAdventure: 88,
-  foodSocial: 80,
-  travelAdventure: 72,
-  travelPlanning: 54,
-  socialEnergy: 78
-}
-
-describe('product logic', () => {
-  it('keeps the DOCX-expanded question bank split across four assessment modules', () => {
-    expect(testModules.map((module) => module.category)).toEqual(['personality', 'food', 'travel', 'social'])
-    // Personality has 26, food 20, travel 20, social 18 — expanded from DOCX scenarios
-    expect(testModules.map((module) => module.questions.length)).toEqual([26, 20, 20, 18])
-
-    const allQuestionText = testModules.flatMap((module) => module.questions.map((question) => question.text))
-    expect(allQuestionText.length).toBeGreaterThanOrEqual(60)
-    expect(allQuestionText.some((t) => t.includes('99+'))).toBe(true)
-    expect(allQuestionText.some((t) => t.includes('苍蝇馆子'))).toBe(true)
-    expect(allQuestionText.some((t) => t.includes('倾盆大雨'))).toBe(true)
-    expect(allQuestionText.some((t) => t.includes('抽象'))).toBe(true)
-  })
-
-  it('scores normal and reverse survey questions into portrait dimensions', () => {
-    const questions: SurveyQuestion[] = [
-      { id: 'open', category: 'personality', dimension: 'openness', text: '开放题' },
-      { id: 'stable-reverse', category: 'personality', dimension: 'emotionalStability', text: '反向题', reverse: true }
+describe('dimension utilities', () => {
+  it('has all 10 dimension labels', () => {
+    const keys: DimensionKey[] = [
+      'OPENNESS', 'CONSCIENTIOUSNESS', 'EXTRAVERSION', 'AGREEABLENESS', 'NEUROTICISM',
+      'FOOD_ADVENTURE', 'FOOD_SOCIAL', 'TRAVEL_ADVENTURE', 'TRAVEL_PLANNING', 'SOCIAL_ENERGY'
     ]
-
-    const portrait = scoreUserPortrait([
-      { questionId: 'open', value: 5 },
-      { questionId: 'stable-reverse', value: 5 }
-    ], questions)
-
-    expect(portrait.openness).toBe(100)
-    expect(portrait.emotionalStability).toBe(0)
-    expect(portrait.conscientiousness).toBe(50)
+    expect(Object.keys(DIMENSION_LABELS)).toHaveLength(10)
+    keys.forEach((k) => expect(DIMENSION_LABELS[k]).toBeTruthy())
   })
 
-  it('keeps recommendation weights explicit and lowers disliked items', () => {
-    expect(RECOMMENDATION_WEIGHTS).toEqual({ personality: 0.4, preference: 0.4, feedback: 0.2 })
-
-    const before = buildRecommendations('food', basePortrait, [])
-    const target = before.find((item) => item.id === 'food-fusion')
-    expect(target).toBeTruthy()
-
-    const after = buildRecommendations('food', basePortrait, [{
-      recommendationId: 'food-fusion',
-      recommendationTitle: '创意融合小馆',
-      recommendationType: 'food',
-      feedback: 'dislike',
-      createdAt: '2026-06-01T00:00:00.000Z'
-    }])
-    const lowered = after.find((item) => item.id === 'food-fusion')
-
-    expect(lowered?.matchScore).toBeLessThan(target!.matchScore)
+  it('inverts NEUROTICISM for display', () => {
+    expect(displayScore('NEUROTICISM', 80)).toBe(20)
+    expect(displayScore('NEUROTICISM', 20)).toBe(80)
+    expect(displayScore('OPENNESS', 80)).toBe(80)
   })
 
-  it('calculates a perfect match for identical portraits', () => {
-    const result = createMatchResult(basePortrait, basePortrait, '我', '好友')
+  it('maps NEUROTICISM to stability for display', () => {
+    expect(DISPLAY_LABELS['NEUROTICISM']).toBe('情绪稳定性')
+    expect(DISPLAY_LABELS['OPENNESS']).toBe('开放性')
+  })
 
-    expect(result.compatibility).toBe(100)
-    expect(Object.values(result.dimensionScores)).toEqual([100, 100, 100, 100, 100])
-    expect(result.suggestions.length).toBeGreaterThan(0)
+  it('returns explanation text for all 10 dimensions', () => {
+    const keys: DimensionKey[] = [
+      'OPENNESS', 'CONSCIENTIOUSNESS', 'EXTRAVERSION', 'AGREEABLENESS', 'NEUROTICISM',
+      'FOOD_ADVENTURE', 'FOOD_SOCIAL', 'TRAVEL_ADVENTURE', 'TRAVEL_PLANNING', 'SOCIAL_ENERGY'
+    ]
+    for (const key of keys) {
+      const high = dimensionExplanation(key, 80)
+      const mid = dimensionExplanation(key, 55)
+      const low = dimensionExplanation(key, 30)
+      expect(high.explanation).toBeTruthy()
+      expect(mid.explanation).toBeTruthy()
+      expect(low.explanation).toBeTruthy()
+      expect(high.impact).toContain(DIMENSION_LABELS[key])
+    }
+  })
+
+  it('returns portrait title for strongest dimension', () => {
+    const scores: Record<string, number> = {
+      OPENNESS: 85, CONSCIENTIOUSNESS: 60, EXTRAVERSION: 50, AGREEABLENESS: 55, NEUROTICISM: 40,
+      FOOD_ADVENTURE: 50, FOOD_SOCIAL: 50, TRAVEL_ADVENTURE: 50, TRAVEL_PLANNING: 50, SOCIAL_ENERGY: 50
+    }
+    expect(portraitTitle(scores)).toBe('探索型生活家')
+  })
+
+  it('returns summary text for portrait', () => {
+    const scores: Record<string, number> = {
+      OPENNESS: 85, CONSCIENTIOUSNESS: 60, EXTRAVERSION: 50, AGREEABLENESS: 55, NEUROTICISM: 40,
+      FOOD_ADVENTURE: 50, FOOD_SOCIAL: 50, TRAVEL_ADVENTURE: 50, TRAVEL_PLANNING: 50, SOCIAL_ENERGY: 50
+    }
+    const summary = portraitSummary(scores)
+    expect(summary).toBeTruthy()
+    expect(summary.length).toBeGreaterThan(10)
   })
 })
