@@ -4,7 +4,7 @@ import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
 import RegionSelector from '../components/RegionSelector.vue'
-import type { LocationRecommendation, Recommendation, RegionInfo } from '../types'
+import type { LocationRecommendation } from '../types'
 import { listRecommendations, submitFeedback } from '../services/recommendationService'
 import { getMyRegion } from '../services/regionService'
 
@@ -18,13 +18,13 @@ const tabs: Array<{ value: string; label: string }> = [
 ]
 
 const active = ref('food')
-const items = ref<Recommendation[]>([])
+const items = ref<LocationRecommendation[]>([])
 const submitted = ref<Record<number, string>>({})
 const loading = ref(true)
 const error = ref('')
 const notice = ref('')
 const hasRegion = ref(false)
-const region = ref<RegionInfo | null>(null)
+const region = ref<{ province: string; city: string; district?: string } | null>(null)
 
 function switchTab(tab: string) {
   if (tab === 'community') {
@@ -67,7 +67,7 @@ function onRegionChanged() {
   loadRegion().then(() => load())
 }
 
-async function feedback(item: Recommendation, rating: string) {
+async function feedback(item: LocationRecommendation, rating: string) {
   try {
     await submitFeedback(item.id, rating)
     submitted.value[item.id] = rating
@@ -84,16 +84,8 @@ function feedbackLabel(rating: string) {
   return rating === 'LIKE' ? '喜欢' : rating === 'NEUTRAL' ? '一般' : '不喜欢'
 }
 
-function isAi(item: Recommendation): boolean {
-  return (item as LocationRecommendation).source === 'ai'
-}
-
-function getAddress(item: Recommendation): string | undefined {
-  return (item as LocationRecommendation).address
-}
-
-function getAiReason(item: Recommendation): string | undefined {
-  return (item as LocationRecommendation).aiReason
+function isAi(item: LocationRecommendation): boolean {
+  return item.source === 'ai'
 }
 
 watch(active, load)
@@ -151,9 +143,9 @@ onMounted(() => {
           </div>
           <span class="score-pill" title="综合适配度">{{ item.score }}%</span>
         </div>
-        <p v-if="getAddress(item)" class="address-line">{{ getAddress(item) }}</p>
+        <p v-if="item.address" class="address-line">{{ item.address }}</p>
         <p>{{ item.description }}</p>
-        <p v-if="getAiReason(item)" class="ai-reason">{{ getAiReason(item) }}</p>
+        <p v-if="item.aiReason" class="ai-reason">{{ item.aiReason }}</p>
         <div class="tag-row">
           <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
         </div>

@@ -52,11 +52,15 @@ public class RecommendationService {
 
     @Transactional(readOnly = true)
     public List<ApiDtos.RecommendationResponse> recommend(UserAccount user, String sceneValue) {
-        return recommendWithRegion(user, sceneValue, null, null, null);
+        return recommendWithRegion(user, sceneValue, null, null, null).stream()
+                .map(r -> new ApiDtos.RecommendationResponse(
+                        r.id(), r.scene(), r.title(), r.description(), r.tags(),
+                        r.score(), r.baseScore(), r.active()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<ApiDtos.RecommendationResponse> recommendWithRegion(
+    public List<ApiDtos.LocationRecommendationResponse> recommendWithRegion(
             UserAccount user, String sceneValue,
             String province, String city, String district) {
 
@@ -74,23 +78,23 @@ public class RecommendationService {
                 .limit(10)
                 .collect(Collectors.toCollection(ArrayList::new));
 
+        List<ApiDtos.LocationRecommendationResponse> merged = new ArrayList<>();
         if (province != null && !province.isBlank() && city != null && !city.isBlank()) {
             try {
                 List<ApiDtos.LocationRecommendationResponse> ai = aiRecommendationService.recommend(
                         user, scene, province, city, district);
-                List<ApiDtos.RecommendationResponse> merged = new ArrayList<>();
-                for (ApiDtos.LocationRecommendationResponse r : ai) {
-                    merged.add(new ApiDtos.RecommendationResponse(
-                            r.id(), r.scene(), r.title(), r.description(), r.tags(),
-                            r.score(), r.baseScore(), r.active()));
-                }
-                merged.addAll(general);
-                return merged.stream().limit(15).toList();
+                merged.addAll(ai);
             } catch (Exception e) {
-                // AI failure, fall through to general
+                // AI failure, fall through to general only
             }
         }
-        return general;
+        for (ApiDtos.RecommendationResponse r : general) {
+            merged.add(new ApiDtos.LocationRecommendationResponse(
+                    r.id(), r.scene(), r.title(), r.description(), r.tags(),
+                    r.score(), r.baseScore(), r.active(),
+                    null, null, "general"));
+        }
+        return merged.stream().limit(15).toList();
     }
 
     @Transactional
