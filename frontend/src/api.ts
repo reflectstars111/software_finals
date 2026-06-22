@@ -97,7 +97,9 @@ export const regionApi = {
   districts: (cityId: number) => dataOf<SimpleRegion[]>(api.get('/regions/districts', { params: { cityId } })),
   getMyRegion: () => dataOf<RegionInfo | null>(api.get('/user/region')),
   saveMyRegion: (payload: RegionInfo) => dataOf<RegionInfo>(api.post('/user/region', payload)),
-  history: () => dataOf<RegionRecord[]>(api.get('/user/region/history'))
+  history: () => dataOf<RegionRecord[]>(api.get('/user/region/history')),
+  ipLocate: () => dataOf<RegionInfo | null>(api.get('/user/region/ip-locate')),
+  reverseGeocode: (lat: number, lng: number) => dataOf<RegionInfo | null>(api.get('/user/region/reverse-geocode', { params: { lat, lng } }))
 }
 
 export const matchApi = {

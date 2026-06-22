@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { Heart, Star, Eye, MessageCircle } from 'lucide-vue-next'
 import EmptyState from '../../components/common/EmptyState.vue'
 import LoadingState from '../../components/common/LoadingState.vue'
 import PageContainer from '../../components/common/PageContainer.vue'
@@ -55,27 +56,27 @@ onMounted(load)
 
     <template v-if="post">
       <article class="panel">
-        <p style="white-space:pre-wrap">{{ post.content }}</p>
+        <p class="post-body">{{ post.content }}</p>
         <div class="tag-row">
           <span>{{ post.domainTag }}</span>
           <span v-for="tag in post.styleTags" :key="tag">{{ tag }}</span>
         </div>
         <p v-if="post.showCompatibility" class="notice compact">你的契合度：{{ post.compatibility }}%</p>
-        <div class="toolbar" style="margin-top:12px">
-          <button class="primary small" @click="doLike">❤ {{ post.likeCount }}</button>
-          <button class="secondary small" @click="doFavorite">⭐ {{ post.favoriteCount }}</button>
-          <span class="muted">👁 {{ post.viewCount }} · 💬 {{ post.commentCount }}</span>
+        <div class="toolbar section-gap">
+          <button class="primary small" @click="doLike"><Heart :size="14" /> {{ post.likeCount }}</button>
+          <button class="secondary small" @click="doFavorite"><Star :size="14" /> {{ post.favoriteCount }}</button>
+          <span class="muted"><Eye :size="14" class="icon-sm" /> {{ post.viewCount }} · <MessageCircle :size="14" class="icon-sm" /> {{ post.commentCount }}</span>
         </div>
       </article>
 
       <section class="panel section-gap">
         <h2>评论 ({{ comments.length }})</h2>
-        <div class="toolbar" style="margin-bottom:12px">
-          <input v-model="commentText" placeholder="写评论..." maxlength="500" style="flex:1;min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:6px" />
+        <div class="toolbar filter-bar">
+          <input v-model="commentText" class="field-input" placeholder="写评论..." maxlength="500" />
           <button class="primary small" @click="doComment">发表</button>
         </div>
         <EmptyState v-if="!comments.length" title="暂无评论" description="成为第一个评论的人" />
-        <div v-else v-for="c in comments" :key="c.id" class="card" style="margin-bottom:8px">
+        <div v-else v-for="c in comments" :key="c.id" class="card comment-card">
           <div class="split">
             <strong>{{ c.user.displayName }}</strong>
             <small class="muted">{{ formatTime(c.createdAt) }}</small>
@@ -87,3 +88,9 @@ onMounted(load)
     </template>
   </PageContainer>
 </template>
+
+<style scoped>
+.comment-card {
+  margin-bottom: 8px;
+}
+</style>

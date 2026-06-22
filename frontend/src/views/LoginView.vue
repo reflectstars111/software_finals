@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Radar } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
@@ -37,35 +38,81 @@ function useAdmin() {
 </script>
 
 <template>
-  <section class="auth-page">
-    <div class="auth-box panel">
-      <div class="auth-title">
-        <p class="eyebrow">性格雷达·生活指南</p>
-        <h1>{{ mode === 'login' ? '登录' : '注册' }}</h1>
-        <p class="muted">默认演示用户：13900000001 / User123456</p>
+  <section class="auth-layout">
+    <div class="auth-left">
+      <div class="auth-hero-content">
+        <Radar :size="64" class="auth-hero-icon" />
+        <p class="eyebrow auth-hero-eyebrow">性格雷达·生活指南</p>
+        <h1>星图雷达</h1>
+        <p>用10维画像，照亮你的生活选择。完成测评，获得可解释的多维画像，获取个性化生活推荐。</p>
+        <div class="hero-flow auth-hero-flow" aria-label="产品流程">
+          <div class="flow-step auth-flow-step">测试</div>
+          <div class="flow-line"></div>
+          <div class="flow-step auth-flow-step">报告</div>
+          <div class="flow-line"></div>
+          <div class="flow-step auth-flow-step">推荐</div>
+          <div class="flow-line"></div>
+          <div class="flow-step auth-flow-step">匹配</div>
+        </div>
       </div>
-      <div class="segmented full auth-mode-switch">
-        <button type="button" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button>
-        <button type="button" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button>
+    </div>
+    <div class="auth-right">
+      <div class="auth-box panel">
+        <div class="auth-title">
+          <p class="eyebrow">性格雷达·生活指南</p>
+          <h1>{{ mode === 'login' ? '登录' : '注册' }}</h1>
+          <p class="muted">默认演示用户：13900000001 / User123456</p>
+        </div>
+        <div class="segmented full auth-mode-switch">
+          <button type="button" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button>
+          <button type="button" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button>
+        </div>
+        <div v-if="error" class="error">{{ error }}</div>
+        <form @submit.prevent="submit">
+          <div class="field">
+            <label>手机号</label>
+            <input v-model="phone" maxlength="11" placeholder="11 位手机号" />
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input v-model="password" type="password" placeholder="6-16 位密码" />
+          </div>
+          <div v-if="mode === 'register'" class="field">
+            <label>昵称</label>
+            <input v-model="displayName" placeholder="你的展示昵称" />
+          </div>
+          <button class="primary full" :disabled="loading" type="submit">{{ loading ? '处理中...' : '进入系统' }}</button>
+        </form>
+        <button class="ghost full login-admin" type="button" @click="useAdmin">使用管理员账号</button>
+        <RouterLink class="ghost full login-back" to="/">返回首页</RouterLink>
       </div>
-      <div v-if="error" class="error">{{ error }}</div>
-      <form @submit.prevent="submit">
-        <div class="field">
-          <label>手机号</label>
-          <input v-model="phone" maxlength="11" placeholder="11 位手机号" />
-        </div>
-        <div class="field">
-          <label>密码</label>
-          <input v-model="password" type="password" placeholder="6-16 位密码" />
-        </div>
-        <div v-if="mode === 'register'" class="field">
-          <label>昵称</label>
-          <input v-model="displayName" placeholder="你的展示昵称" />
-        </div>
-        <button class="primary full" :disabled="loading" type="submit">{{ loading ? '处理中...' : '进入系统' }}</button>
-      </form>
-      <button class="ghost full login-admin" type="button" @click="useAdmin">使用管理员账号</button>
-      <RouterLink class="ghost full login-back" to="/">返回首页</RouterLink>
     </div>
   </section>
 </template>
+
+<style scoped>
+.auth-hero-content {
+  max-width: 400px;
+  text-align: center;
+}
+
+.auth-hero-icon {
+  color: var(--blip);
+  margin-bottom: 24px;
+}
+
+.auth-hero-eyebrow {
+  color: var(--blip);
+}
+
+.auth-hero-flow {
+  margin-top: 32px;
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.auth-flow-step {
+  font-size: 15px;
+}
+</style>

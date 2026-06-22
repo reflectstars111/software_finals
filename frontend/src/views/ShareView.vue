@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
+import PageContainer from '../components/common/PageContainer.vue'
 import { reportApi } from '../api'
 import type { Report } from '../types'
 import { useRadarChart } from '../composables/useRadarChart'
@@ -42,15 +43,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="page share-page">
-    <header class="page-header">
-      <div>
-        <p class="eyebrow">分享报告</p>
-        <h1>{{ report?.user.displayName || '性格雷达' }} 的公开画像</h1>
-        <p class="muted">公开报告只展示摘要维度，不展示完整答题内容。</p>
-      </div>
+  <PageContainer
+    eyebrow="分享报告"
+    :title="(report?.user.displayName || '性格雷达') + ' 的公开画像'"
+    description="公开报告只展示摘要维度，不展示完整答题内容。"
+  >
+    <template #actions>
       <RouterLink class="button" to="/">进入系统</RouterLink>
-    </header>
+    </template>
     <LoadingState v-if="loading" message="正在加载分享报告..." />
     <div v-if="error" class="error">{{ error }}</div>
     <EmptyState
@@ -68,5 +68,5 @@ onMounted(() => {
         </div>
       </div>
     </section>
-  </section>
+  </PageContainer>
 </template>

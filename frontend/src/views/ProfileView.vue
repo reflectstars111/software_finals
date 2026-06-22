@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
+import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
 import type { TestResult, ReportSnapshot, MatchReport, ShareLinkSummary, MatchInvite, UserFeedback } from '../types'
 import { revokeShare } from '../services/reportService'
@@ -10,6 +12,7 @@ import { formatTime } from '../utils/format'
 import { getErrorMessage } from '../utils/errors'
 
 const auth = useAuthStore()
+const router = useRouter()
 const testHistory = ref<TestResult[]>([])
 const reportSnapshots = ref<ReportSnapshot[]>([])
 const matches = ref<MatchReport[]>([])
@@ -52,7 +55,7 @@ async function doRevokeShare(id: number) {
 
 function logout() {
   auth.logout()
-  location.href = '/'
+  router.push('/')
 }
 
 onMounted(load)
@@ -66,7 +69,7 @@ onMounted(load)
   >
     <div v-if="notice" class="notice">{{ notice }}</div>
     <div v-if="error" class="error">{{ error }}</div>
-    <div v-if="loading" class="notice">正在加载数据...</div>
+    <LoadingState v-if="loading" inline message="正在加载数据..." />
 
     <section class="grid two">
       <article class="panel profile-card">

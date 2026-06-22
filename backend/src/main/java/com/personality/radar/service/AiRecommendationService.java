@@ -61,14 +61,14 @@ public class AiRecommendationService {
 
         String fullRegion = province + " " + city + (district != null ? " " + district : "");
 
-        String systemPrompt = "你是一个精准的本地生活推荐助手。根据用户信息推荐5个位于指定城市的真实线下地点。请严格返回JSON数组，每个元素包含: title(地点名称), address(详细地址), reason(300字以内推荐理由), tags(标签数组)。只返回JSON，不要任何额外文字。";
+        String systemPrompt = "你是一个精准的本地生活推荐助手。根据用户信息推荐6个位于指定城市的真实线下地点。请严格返回JSON数组，每个元素包含: title(地点名称), address(详细地址), reason(300字以内推荐理由), tags(标签数组)。只返回JSON，不要任何额外文字。";
 
         String userMessage = String.format("""
                 用户性格画像（10维度分数）: %s
                 推荐场景: %s
                 所在城市: %s
 
-                请为该用户推荐5个%s的真实线下地点。""",
+                请为该用户推荐6个%s的真实线下地点。""",
                 scores.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
                         .collect(Collectors.joining(", ")),
                 sceneLabel, fullRegion, fullRegion);

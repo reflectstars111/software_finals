@@ -1,12 +1,17 @@
 package com.personality.radar.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personality.radar.common.BusinessException;
 import com.personality.radar.domain.UserAccount;
 import com.personality.radar.domain.UserRegion;
 import com.personality.radar.dto.ApiDtos;
 import com.personality.radar.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 @Service
@@ -69,5 +74,38 @@ public class RegionService {
                 .map(r -> new ApiDtos.RegionRecord(r.getProvince(), r.getCity(), r.getDistrict(),
                         r.isCurrent(), r.getCreatedAt()))
                 .toList();
+    }
+
+    public ApiDtos.RegionResponse reverseGeocode(double lat, double lng) {
+        try {
+            RestTemplate rt = new RestTemplate();
+            // Use ip-api.com reverse geocode (same service as IP locate, China-friendly)
+            String url = String.format("http://ip-api.com/json/?lat=%f&lon=%f&lang=zh-CN&fields=city,regionName", lat, lng);
+            String json = rt.getForObject(url, String.class);
+            if (json == null) return null;
+            JsonNode node = new ObjectMapper().readTree(json);
+            String province = node.path("regionName").asText();
+            String city = node.path("city").asText();
+            if (province.isEmpty() || city.isEmpty()) return null;
+            return new ApiDtos.RegionResponse(province, city, "");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public ApiDtos.RegionResponse locateByIp(String ip) {
+        try {
+            RestTemplate rt = new RestTemplate();
+            String url = "http://ip-api.com/json/" + ip + "?lang=zh-CN&fields=city,regionName,country";
+            String json = rt.getForObject(url, String.class);
+            if (json == null) return null;
+            JsonNode node = new ObjectMapper().readTree(json);
+            String province = node.path("regionName").asText();
+            String city = node.path("city").asText();
+            if (province.isEmpty() || city.isEmpty()) return null;
+            return new ApiDtos.RegionResponse(province, city, "");
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

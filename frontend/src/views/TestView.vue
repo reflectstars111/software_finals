@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Brain, UtensilsCrossed, MapPin, Users } from 'lucide-vue-next'
+import BaseModal from '../components/common/BaseModal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
@@ -19,6 +21,7 @@ function answerKey(q: { type: string; id: number }) {
 const currentIndex = ref(0)
 const loading = ref(true)
 const submitting = ref(false)
+const showConfirm = ref(false)
 const error = ref('')
 const notice = ref('')
 
@@ -36,6 +39,9 @@ const totalProgress = computed(() =>
 const moduleKeys = ['personality', 'food', 'travel', 'social']
 const moduleLabels: Record<string, string> = {
   personality: '基础性格', food: '饮食偏好', travel: '旅游偏好', social: '社交倾向'
+}
+const moduleIcons: Record<string, any> = {
+  personality: Brain, food: UtensilsCrossed, travel: MapPin, social: Users
 }
 
 function jumpToType(type: string) {
@@ -58,7 +64,7 @@ function prev() {
   currentIndex.value = Math.max(currentIndex.value - 1, 0)
 }
 
-async function submit() {
+function submit() {
   error.value = ''
   notice.value = ''
   const missing = allQuestions.value.length - answeredCount.value
@@ -66,7 +72,11 @@ async function submit() {
     error.value = `你还有 ${missing} 道题未完成，请完成后再生成报告。`
     return
   }
-  if (!window.confirm('确认提交后将生成新的画像报告，并覆盖当前推荐依据。')) return
+  showConfirm.value = true
+}
+
+async function confirmSubmit() {
+  showConfirm.value = false
   submitting.value = true
   try {
     // Submit all four types
@@ -156,7 +166,7 @@ onUnmounted(() => {
       <span class="progress-label">总进度 {{ totalProgress }}%</span>
     </template>
 
-    <div class="progress-track"><span :style="{ width: `${totalProgress}%` }"></span></div>
+    <div class="progress-track"><span class="progress-fill" :style="{ '--meter-width': `${totalProgress}%` }"></span></div>
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="notice" class="notice">{{ notice }}</div>
     <LoadingState v-if="loading" message="正在加载题库..." />
@@ -178,32 +188,65 @@ onUnmounted(() => {
           :class="{ active: currentQuestion?.type === key }"
           @click="jumpToType(key)"
         >
-          <strong>{{ moduleLabels[key] }}测试</strong>
+          <strong>
+            <component :is="moduleIcons[key]" :size="16" class="icon-sm module-nav-icon" />
+            {{ moduleLabels[key] }}测试
+          </strong>
           <span>{{ questionsByType[key]?.length || 0 }} 题</span>
         </button>
       </aside>
 
-      <article v-if="currentQuestion" class="panel question-panel">
-        <div class="split">
-          <p class="eyebrow">{{ moduleLabels[currentQuestion.type] }}测试</p>
-          <strong>{{ currentIndex + 1 }} / {{ allQuestions.length }}</strong>
-        </div>
-        <h2>{{ currentQuestion.content }}</h2>
-        <div class="scale-grid">
-          <label v-for="n in 5" :key="n" :class="{ selected: answers[answerKey(currentQuestion)] === n }">
-            <input v-model="answers[answerKey(currentQuestion)]" type="radio" :name="answerKey(currentQuestion)" :value="n" />
-            <span>{{ n }}</span>
-            <strong>{{ ['非常不同意','不太同意','一般','比较同意','非常同意'][n-1] }}</strong>
-          </label>
-        </div>
-        <div class="toolbar question-actions">
-          <button class="ghost" type="button" :disabled="currentIndex === 0" @click="prev">上一题</button>
-          <button v-if="currentIndex < allQuestions.length - 1" class="primary" type="button" @click="next">下一题</button>
-          <button v-else class="primary" type="button" :disabled="submitting" @click="submit">
-            {{ submitting ? '提交中...' : '生成报告' }}
+      <Transition name="question-slide" mode="out-in">
+        <article v-if="currentQuestion" :key="currentQuestion.id" class="panel question-panel">
+          <div class="split">
+            <p class="eyebrow">{{ moduleLabels[currentQuestion.type] }}测试</p>
+            <strong>{{ currentIndex + 1 }} / {{ allQuestions.length }}</strong>
+          </div>
+          <div class="mini-meter"><span class="question-progress-fill" :style="{ '--meter-width': `${(answeredCount / allQuestions.length) * 100}%` }"></span></div>
+          <h2>{{ currentQuestion.content }}</h2>
+          <div class="scale-grid">
+            <label v-for="n in 5" :key="n" :class="{ selected: answers[answerKey(currentQuestion)] === n }">
+              <input v-model="answers[answerKey(currentQuestion)]" type="radio" :name="answerKey(currentQuestion)" :value="n" />
+              <span>{{ n }}</span>
+              <strong>{{ ['非常不同意','不太同意','一般','比较同意','非常同意'][n-1] }}</strong>
+            </label>
+          </div>
+          <div class="toolbar question-actions">
+            <button class="ghost" type="button" :disabled="currentIndex === 0" @click="prev">上一题</button>
+            <button v-if="currentIndex < allQuestions.length - 1" class="primary" type="button" @click="next">下一题</button>
+            <button v-else class="primary" type="button" :disabled="submitting" @click="submit">
+              {{ submitting ? '提交中...' : '生成报告' }}
+            </button>
+          </div>
+        </article>
+      </Transition>
+
+      <BaseModal :open="showConfirm" title="确认提交" @close="showConfirm = false">
+        <p>提交后将生成新的画像报告，并覆盖当前推荐依据。</p>
+        <div class="toolbar modal-action-bar">
+          <button class="ghost" type="button" @click="showConfirm = false">取消</button>
+          <button class="primary" type="button" :disabled="submitting" @click="confirmSubmit">
+            {{ submitting ? '提交中...' : '确认提交' }}
           </button>
         </div>
-      </article>
+      </BaseModal>
     </section>
   </PageContainer>
 </template>
+
+<style scoped>
+.progress-fill,
+.question-progress-fill {
+  width: var(--meter-width);
+}
+
+.module-nav-icon {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.modal-action-bar {
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+</style>

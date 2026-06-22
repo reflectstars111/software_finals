@@ -399,13 +399,11 @@ $regionSqlFile = Join-Path $InfraDir "init-region-data.sql"
 if (Test-Path -LiteralPath $regionSqlFile) {
   Write-Host ""
   Write-Host "==> Import region data (provinces/cities/districts)"
-  $previousErrorAction = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  Get-Content -LiteralPath $regionSqlFile -Raw | docker exec -i -e "MYSQL_PWD=$Password" $Container mysql --force --default-character-set=utf8mb4 "-u$User" $Database 2>&1 | ForEach-Object {
-    if ($_ -match "ERROR") { Write-Host "  [SKIP] $_" } else { Write-Host "  $_" }
+  Invoke-Checked "Copy and import region SQL" {
+    docker cp $regionSqlFile ${Container}:/tmp/init-region.sql
+    docker exec -e "MYSQL_PWD=$Password" $Container mysql --default-character-set=utf8mb4 "-u$User" $Database -e "SET FOREIGN_KEY_CHECKS=0; TRUNCATE districts; TRUNCATE cities; TRUNCATE provinces; SET FOREIGN_KEY_CHECKS=1"
+    docker exec $Container sh -c "mysql --default-character-set=utf8mb4 -u$User -p$Password $Database < /tmp/init-region.sql 2>&1; exit 0"
   }
-  $ErrorActionPreference = $previousErrorAction
-  Write-Host "Region data check complete."
 } else {
   Write-Warning "Region data file not found: $regionSqlFile -- skipping region import."
 }

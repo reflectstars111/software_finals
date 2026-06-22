@@ -3,6 +3,8 @@ package com.personality.radar.service;
 import com.personality.radar.common.BusinessException;
 import com.personality.radar.domain.Feedback;
 import com.personality.radar.domain.FeedbackRating;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.personality.radar.domain.PersonalityDimension;
 import com.personality.radar.domain.RecommendationItem;
 import com.personality.radar.domain.RecommendationRule;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RecommendationService {
+    private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
     private final RecommendationItemRepository items;
     private final TestResultRepository results;
     private final FeedbackRepository feedbacks;
@@ -83,9 +86,20 @@ public class RecommendationService {
             try {
                 List<ApiDtos.LocationRecommendationResponse> ai = aiRecommendationService.recommend(
                         user, scene, province, city, district);
+                // Ensure AI items have source and scene set
+                for (int idx = 0; idx < ai.size(); idx++) {
+                    var item = ai.get(idx);
+                    if (item.source() == null || item.source().isBlank()) {
+                        ai.set(idx, new ApiDtos.LocationRecommendationResponse(
+                                (long) -(idx + 1), scene.name().toLowerCase(), item.title(),
+                                item.description(), item.tags(), item.score(),
+                                item.baseScore(), true, item.address(),
+                                item.aiReason(), "ai"));
+                    }
+                }
                 merged.addAll(ai);
             } catch (Exception e) {
-                // AI failure, fall through to general only
+                log.warn("AI recommendation unavailable, falling back to general: {}", e.getMessage());
             }
         }
         for (ApiDtos.RecommendationResponse r : general) {

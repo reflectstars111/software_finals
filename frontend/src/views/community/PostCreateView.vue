@@ -59,7 +59,7 @@ async function submit() {
     <div class="panel">
       <div class="field">
         <label>领域标签（必选）</label>
-        <select v-model="domainTag" @change="switchDomain" style="min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:8px">
+        <select v-model="domainTag" @change="switchDomain">
           <option value="FOOD">饮食</option><option value="TRAVEL">旅行</option><option value="SOCIAL">社交</option>
           <option value="OUTFIT">穿搭</option><option value="CAREER">生涯</option><option value="OTHER">其他</option>
         </select>
@@ -67,20 +67,27 @@ async function submit() {
       <div class="field">
         <label>风格标签（可选，最多3个）</label>
         <div class="tag-row">
-          <span v-for="tag in domainStyleTags[domainTag]" :key="tag" :style="{cursor:'pointer',opacity:styleTags.includes(tag)?1:0.5,background:styleTags.includes(tag)?'var(--blip)':'var(--soft)',color:styleTags.includes(tag)?'#fff':'var(--muted)'}" @click="toggleTag(tag)">{{ tag }}</span>
+          <button
+            v-for="tag in domainStyleTags[domainTag]"
+            :key="tag"
+            type="button"
+            class="style-tag"
+            :class="{ selected: styleTags.includes(tag) }"
+            @click="toggleTag(tag)"
+          >{{ tag }}</button>
         </div>
       </div>
       <div class="field" v-if="styleTags.length < 3">
         <label>自定义标签（1-15字）</label>
         <div class="toolbar">
-          <input v-model="customTag" maxlength="15" placeholder="输入自定义标签" style="flex:1;min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:6px" />
+          <input v-model="customTag" maxlength="15" placeholder="输入自定义标签" />
           <button class="primary small" @click="addCustomTag">添加</button>
         </div>
       </div>
       <div class="field">
         <label>正文（1-2000字）</label>
-        <textarea v-model="content" maxlength="2000" rows="6" style="width:100%;min-height:140px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;resize:vertical" placeholder="分享你的想法..."></textarea>
-        <span class="muted" style="text-align:right">{{ content.length }}/2000</span>
+        <textarea v-model="content" maxlength="2000" rows="6" placeholder="分享你的想法..."></textarea>
+        <span class="counter">{{ content.length }}/2000</span>
       </div>
       <button class="primary full" :disabled="submitting" @click="submit">{{ submitting ? '发布中...' : '提交发布' }}</button>
     </div>

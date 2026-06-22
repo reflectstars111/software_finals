@@ -1,5 +1,7 @@
 ﻿<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { UtensilsCrossed, MapPin, Users, Shirt, Briefcase, MessageSquare, Sparkles } from 'lucide-vue-next'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
@@ -7,6 +9,8 @@ import RegionSelector from '../components/RegionSelector.vue'
 import type { LocationRecommendation } from '../types'
 import { listRecommendations, submitFeedback } from '../services/recommendationService'
 import { getMyRegion } from '../services/regionService'
+
+const router = useRouter()
 
 const tabs: Array<{ value: string; label: string }> = [
   { value: 'food', label: '饮食' },
@@ -28,7 +32,7 @@ const region = ref<{ province: string; city: string; district?: string } | null>
 
 function switchTab(tab: string) {
   if (tab === 'community') {
-    location.href = '/community'
+    router.push('/community')
     return
   }
   active.value = tab
@@ -134,8 +138,13 @@ onMounted(() => {
         v-for="item in items"
         :key="item.id"
         class="card recommendation-card"
-        :class="{ 'ai-card': isAi(item) }"
+        :class="{ 'rec-card-ai': isAi(item) }"
       >
+        <div v-if="isAi(item)" class="tag-row ai-tag-row">
+          <span class="ai-tag-badge">
+            <Sparkles :size="12" class="ai-tag-icon" /> AI 精准
+          </span>
+        </div>
         <div class="split">
           <div>
             <p class="eyebrow">{{ getSceneLabel(item.scene) }}</p>
@@ -161,22 +170,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.ai-card {
-  border-left: 3px solid var(--signal, #f97316);
-  padding-left: calc(var(--card-padding, 1.25rem) - 3px);
-}
-
-.ai-card::before {
-  content: 'AI 精准推荐';
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--signal, #f97316);
-  margin-bottom: 0.5rem;
-}
-
 .address-line {
   font-size: 0.85rem;
   color: var(--muted);
@@ -185,8 +178,23 @@ onMounted(() => {
 
 .ai-reason {
   font-size: 0.85rem;
-  color: var(--signal-dim, #92400e);
+  color: var(--notice-text);
   font-style: italic;
   margin-top: 0.25rem;
+}
+
+.ai-tag-row {
+  margin-bottom: 4px;
+}
+
+.ai-tag-badge {
+  background: rgba(232, 180, 79, 0.12);
+  color: var(--signal);
+  font-weight: 800;
+}
+
+.ai-tag-icon {
+  vertical-align: middle;
+  margin-right: 2px;
 }
 </style>

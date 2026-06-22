@@ -12,7 +12,6 @@ const domain = ref('')
 const posts = ref<PostResponse[]>([])
 const loading = ref(true)
 const error = ref('')
-const notice = ref('')
 
 const domains = ['', 'FOOD', 'TRAVEL', 'SOCIAL', 'OUTFIT', 'CAREER', 'OTHER']
 const domainLabels: Record<string, string> = {
@@ -41,15 +40,14 @@ onMounted(load)
       <RouterLink class="button" to="/community/create">发布动态</RouterLink>
     </template>
 
-    <div v-if="notice" class="notice">{{ notice }}</div>
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div class="toolbar" style="margin-bottom:16px">
+    <div class="toolbar filter-bar">
       <div class="segmented">
         <button :class="{ active: sort === 'recommend' }" @click="sort = 'recommend'; load()">推荐</button>
         <button :class="{ active: sort === 'latest' }" @click="sort = 'latest'; load()">最新</button>
       </div>
-      <select v-model="domain" @change="load()" style="min-height:36px;padding:0 8px;border:1px solid var(--line);border-radius:6px">
+      <select v-model="domain" class="filter-select" @change="load()">
         <option v-for="d in domains" :key="d" :value="d">{{ domainLabels[d] }}</option>
       </select>
     </div>
@@ -64,7 +62,7 @@ onMounted(load)
       action-to="/community/create"
     />
 
-    <section v-else class="grid" style="gap:12px">
+    <section v-else class="grid compact">
       <PostCard
         v-for="post in posts" :key="post.id"
         :id="post.id"

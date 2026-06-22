@@ -82,4 +82,27 @@ public class RecommendationController {
     public ApiResponse<List<ApiDtos.RegionRecord>> regionHistory() {
         return ApiResponse.ok(regionService.history(currentUser.requireUser()));
     }
+
+    @GetMapping("/user/region/reverse-geocode")
+    public ApiResponse<ApiDtos.RegionResponse> reverseGeocode(@RequestParam double lat, @RequestParam double lng) {
+        return ApiResponse.ok(regionService.reverseGeocode(lat, lng));
+    }
+
+    @GetMapping("/user/region/ip-locate")
+    public ApiResponse<ApiDtos.RegionResponse> ipLocate(jakarta.servlet.http.HttpServletRequest request) {
+        // Cloudflare → Caddy → Docker: take the original client IP from headers
+        String ip = request.getHeader("CF-Connecting-IP");
+        if (ip == null || ip.isBlank()) {
+            String forwarded = request.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                ip = forwarded.split(",")[0].trim(); // first IP in chain is the client
+            }
+        }
+        if (ip == null || ip.isBlank()) ip = request.getRemoteAddr();
+        if (ip == null || ip.isBlank() || "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)
+                || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
+            return ApiResponse.ok(null);
+        }
+        return ApiResponse.ok(regionService.locateByIp(ip));
+    }
 }
