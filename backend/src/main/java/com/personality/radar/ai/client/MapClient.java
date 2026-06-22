@@ -6,7 +6,9 @@ import com.personality.radar.ai.dto.RestaurantCandidate;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -15,14 +17,21 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Component
 public class MapClient {
 
+    private static final String FOOD_KEYWORD = "\u9910\u5385";
+    private static final List<String> TRAVEL_KEYWORDS = List.of(
+            "\u666f\u70b9",
+            "\u535a\u7269\u9986",
+            "\u516c\u56ed",
+            "\u5386\u53f2\u8857\u533a",
+            "\u53e4\u9547",
+            "\u6b65\u884c\u8857");
+
     @Value("${ai.amap.key}")
     private String amapKey;
 
-    private final RestTemplate restTemplate =
-            new RestTemplate();
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    private final ObjectMapper objectMapper =
-            new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public double[] geocodeCity(String city) {
         try {
@@ -63,66 +72,80 @@ public class MapClient {
                     return parseLocation(location);
                 }
             }
-            throw new IllegalStateException("高德未返回城市坐标: " + city);
+            throw new IllegalStateException("AMap did not return city coordinates: " + city);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public List<RestaurantCandidate> nearbyRestaurants(
-            double latitude,
-            double longitude) {
-
+    public List<RestaurantCandidate> nearbyRestaurants(double latitude, double longitude) {
         try {
             URI uri = UriComponentsBuilder
                     .fromHttpUrl("https://restapi.amap.com/v5/place/around")
                     .queryParam("key", amapKey)
                     .queryParam("location", longitude + "," + latitude)
-                    .queryParam("keywords", "餐厅")
+                    .queryParam("keywords", FOOD_KEYWORD)
                     .queryParam("radius", 5000)
                     .build()
                     .encode(StandardCharsets.UTF_8)
                     .toUri();
-
-            String json =
-                    restTemplate.getForObject(
-                            uri,
-                            String.class);
-
-            JsonNode root =
-                    objectMapper.readTree(json);
-
-            JsonNode pois =
-                    root.get("pois");
-
-            List<RestaurantCandidate> result =
-                    new ArrayList<>();
-
-            if (pois == null || !pois.isArray()) {
-                return result;
-            }
-
-            for (JsonNode poi : pois) {
-
-                RestaurantCandidate item =
-                        new RestaurantCandidate();
-
-                item.setName(text(poi, "name"));
-                item.setCategory(text(poi, "type"));
-                item.setAddress(text(poi, "address"));
-                item.setDistance(poi.has("distance") ? poi.get("distance").asDouble() : null);
-                item.setRating(doubleValue(poi, "rating"));
-                item.setPriceLevel(priceValue(poi));
-                item.setLocation(text(poi, "location"));
-
-                result.add(item);
-            }
-
-            return result;
-
+            return parsePois(restTemplate.getForObject(uri, String.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public List<RestaurantCandidate> travelPois(String city, int limit) {
+        try {
+            Map<String, RestaurantCandidate> merged = new LinkedHashMap<>();
+            int pageSize = Math.min(Math.max(limit, 10), 20);
+            for (String keyword : TRAVEL_KEYWORDS) {
+                URI uri = UriComponentsBuilder
+                        .fromHttpUrl("https://restapi.amap.com/v5/place/text")
+                        .queryParam("key", amapKey)
+                        .queryParam("keywords", keyword)
+                        .queryParam("region", city)
+                        .queryParam("city_limit", true)
+                        .queryParam("page_size", pageSize)
+                        .queryParam("page_num", 1)
+                        .queryParam("show_fields", "business")
+                        .build()
+                        .encode(StandardCharsets.UTF_8)
+                        .toUri();
+                for (RestaurantCandidate candidate : parsePois(restTemplate.getForObject(uri, String.class))) {
+                    merged.putIfAbsent(candidate.getName(), candidate);
+                }
+                if (merged.size() >= limit) {
+                    break;
+                }
+            }
+            return new ArrayList<>(merged.values());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<RestaurantCandidate> parsePois(String json) throws Exception {
+        JsonNode root = objectMapper.readTree(json);
+        JsonNode pois = root.get("pois");
+        Map<String, RestaurantCandidate> unique = new LinkedHashMap<>();
+        if (pois == null || !pois.isArray()) {
+            return List.of();
+        }
+        for (JsonNode poi : pois) {
+            RestaurantCandidate item = new RestaurantCandidate();
+            item.setName(text(poi, "name"));
+            item.setCategory(text(poi, "type"));
+            item.setAddress(text(poi, "address"));
+            item.setDistance(poi.has("distance") ? poi.get("distance").asDouble() : null);
+            item.setRating(doubleValue(poi, "rating"));
+            item.setPriceLevel(priceValue(poi));
+            item.setLocation(text(poi, "location"));
+            if (item.getName() != null && !item.getName().isBlank()) {
+                unique.putIfAbsent(item.getName(), item);
+            }
+        }
+        return new ArrayList<>(unique.values());
     }
 
     private double[] parseLocation(String location) {
@@ -159,7 +182,7 @@ public class MapClient {
         if (cost == null || cost.isBlank() || "[]".equals(cost)) {
             return null;
         }
-        return "人均" + cost + "元";
+        return "\u4eba\u5747" + cost + "\u5143";
     }
 
     private String text(JsonNode node, String field) {

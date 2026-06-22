@@ -77,7 +77,8 @@ public class MockAiRecommendationProvider implements AiRecommendationProvider {
             String reason = adventurous ? s.adventurousReason() : s.safeReason();
             items.add(new AiRecoItem(
                     s.name(), s.category(), s.address(), s.distance(), s.rating(), s.price(),
-                    score, reason, s.tags(), s.mapUrl(), "mock-" + s.name().hashCode()));
+                    score, reason, s.tags(), s.mapUrl(), "mock-" + s.name().hashCode(),
+                    null, null, null, null, null));
         }
         items.sort((a, b) -> Integer.compare(b.matchScore(), a.matchScore()));
         int limit = Math.max(1, context.limit());

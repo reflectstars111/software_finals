@@ -424,3 +424,72 @@ th { background: #f8f7fa; color: var(--muted); font-size: 12px; font-weight: 700
   h1 { font-size: 30px; }
   .question-panel h2 { font-size: 20px; }
 }
+
+/* ---- Travel Recommendations ---- */
+.travel-command { border-left-color: #3d6f8e; }
+.travel-card { border-top-color: #3d6f8e; }
+.travel-section {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f4f8f9;
+}
+.travel-label {
+  margin: 0;
+  color: var(--field);
+  font-size: 13px;
+  font-weight: 800;
+}
+.travel-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink);
+}
+.travel-list li + li { margin-top: 6px; }
+
+.travel-shelf {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(320px, 390px);
+  gap: 18px;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  scroll-snap-type: x proximity;
+}
+.travel-spot-card {
+  scroll-snap-align: start;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 100%;
+  border-top: 3px solid #3d6f8e;
+}
+.travel-spot-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+.travel-spot-topline strong {
+  min-width: 56px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #eaf3f7;
+  color: #2c5870;
+}
+.compact-travel-section {
+  padding: 10px 12px;
+}
+@media (max-width: 920px) {
+  .travel-shelf {
+    grid-auto-columns: minmax(280px, 86vw);
+    margin-right: -16px;
+    padding-right: 16px;
+  }
+}

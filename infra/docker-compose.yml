@@ -58,5 +58,6 @@ services:
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://app.reflectstars.dev,https://reflectstars.dev,http://127.0.0.1:5173,http://localhost:5173}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://app.reflectstars.dev}
       AI_PROVIDER: ${AI_PROVIDER:-real}
+      AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-15000}
     ports:
       - "8080:8080"

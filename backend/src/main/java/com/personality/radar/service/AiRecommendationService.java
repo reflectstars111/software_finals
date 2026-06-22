@@ -174,14 +174,16 @@ public class AiRecommendationService {
                 .limit(limit)
                 .map(r -> new AiDtos.AiRecommendationItemResponse(
                         r.title(), null, null, null, null, null,
-                        r.score(), r.description(), r.tags(), null))
+                        r.score(), r.description(), r.tags(), null,
+                        null, null, null, null, null))
                 .toList();
     }
 
     private AiDtos.AiRecommendationItemResponse toItemResponse(AiRecoItem i) {
         return new AiDtos.AiRecommendationItemResponse(
                 i.name(), i.category(), i.address(), i.distanceMeters(), i.rating(), i.priceLevel(),
-                i.matchScore(), i.reason(), i.tags(), i.mapUrl());
+                i.matchScore(), i.reason(), i.tags(), i.mapUrl(),
+                i.city(), i.durationDays(), i.highlights(), i.itinerary(), i.tips());
     }
 
     private Long persist(UserAccount user, String scene, String source, String city,

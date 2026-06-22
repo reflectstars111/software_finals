@@ -21,20 +21,26 @@ const tabs: Array<{ value: string; label: string }> = [
 const active = ref('food')
 const items = ref<Recommendation[]>([])
 const foodResponse = ref<AiRecommendationResponse | null>(null)
+const travelResponse = ref<AiRecommendationResponse | null>(null)
 const foodLocation = ref<{ lat: number; lng: number } | null>(null)
 const city = ref(localStorage.getItem('radar_city') || '武汉')
 const submitted = ref<Record<number, string>>({})
-const submittedFood = ref<Record<string, string>>({})
+const submittedAi = ref<Record<string, string>>({})
 const loading = ref(true)
 const locating = ref(false)
 const error = ref('')
 const notice = ref('')
 
 const foodItems = computed(() => foodResponse.value?.items || [])
-const foodSourceLabel = computed(() => {
-  if (!foodResponse.value) return '实时推荐'
-  return foodResponse.value.degraded ? '规则兜底' : foodResponse.value.source === 'AI' ? 'AI 推荐' : '规则推荐'
-})
+const travelItems = computed(() => travelResponse.value?.items || [])
+const foodSourceLabel = computed(() => sourceLabel(foodResponse.value, '实时餐饮'))
+const travelSourceLabel = computed(() => sourceLabel(travelResponse.value, '实时景点'))
+const targetCity = computed(() => city.value.trim() || travelResponse.value?.city || '目标城市')
+
+function sourceLabel(response: AiRecommendationResponse | null, empty: string) {
+  if (!response) return empty
+  return response.degraded ? '规则兜底' : response.source === 'AI' ? 'AI 推荐' : '规则推荐'
+}
 
 function sceneLabel(scene: string) {
   const labels: Record<string, string> = {
@@ -52,9 +58,14 @@ function formatDistance(value?: number) {
   return value >= 1000 ? `${(value / 1000).toFixed(1)} km` : `${Math.round(value)} m`
 }
 
-function paramsForFood() {
+function rememberCity() {
   const trimmedCity = city.value.trim()
   if (trimmedCity) localStorage.setItem('radar_city', trimmedCity)
+  return trimmedCity
+}
+
+function paramsForFood() {
+  const trimmedCity = rememberCity()
   return {
     scene: 'food',
     lat: foodLocation.value?.lat,
@@ -64,14 +75,31 @@ function paramsForFood() {
   }
 }
 
+function paramsForTravel() {
+  const trimmedCity = rememberCity()
+  return {
+    scene: 'travel',
+    city: trimmedCity || undefined,
+    limit: 6
+  }
+}
+
 async function loadFood() {
   foodResponse.value = await listAiRecommendations(paramsForFood())
+  travelResponse.value = null
+  items.value = []
+}
+
+async function loadTravel() {
+  travelResponse.value = await listAiRecommendations(paramsForTravel())
+  foodResponse.value = null
   items.value = []
 }
 
 async function loadRuleRecommendations() {
   items.value = await listRecommendations(active.value)
   foodResponse.value = null
+  travelResponse.value = null
 }
 
 async function load() {
@@ -81,6 +109,8 @@ async function load() {
   try {
     if (active.value === 'food') {
       await loadFood()
+    } else if (active.value === 'travel') {
+      await loadTravel()
     } else {
       await loadRuleRecommendations()
     }
@@ -95,7 +125,7 @@ async function locateAndRefresh() {
   error.value = ''
   notice.value = ''
   if (!navigator.geolocation) {
-    error.value = '当前浏览器不支持定位。你可以输入城市后刷新餐饮推荐。'
+    error.value = '当前浏览器不支持定位。你可以输入城市后刷新推荐。'
     return
   }
   locating.value = true
@@ -139,14 +169,15 @@ async function feedback(item: Recommendation, rating: string) {
   }
 }
 
-async function feedbackFood(item: AiRecommendationItem, rating: string) {
-  if (!foodResponse.value?.recordId) return
+async function feedbackAi(item: AiRecommendationItem, rating: string) {
+  const response = active.value === 'travel' ? travelResponse.value : foodResponse.value
+  if (!response?.recordId) return
   try {
-    await submitAiFeedback(foodResponse.value.recordId, { rating, itemName: item.name })
-    submittedFood.value[item.name] = rating
+    await submitAiFeedback(response.recordId, { rating, itemName: item.name })
+    submittedAi.value[item.name] = rating
     notice.value = rating === 'DISLIKE'
-      ? '已记录反馈，下次会避开类似餐厅。'
-      : '已记录反馈，下次会优先考虑类似口味。'
+      ? '已记录反馈，下次会避开相似选择。'
+      : '已记录反馈，下次会优先考虑相似选择。'
   } catch (err) {
     error.value = (err as Error).message || '反馈提交失败'
   }
@@ -160,7 +191,7 @@ onMounted(load)
   <PageContainer
     eyebrow="生活推荐"
     title="把画像变成今天就能执行的选择"
-    description="餐饮推荐会优先结合位置、画像和反馈生成附近可行动建议；其他分类继续使用规则排序。"
+    description="餐饮和旅游会结合位置、城市、画像与真实地图数据生成建议；其他分类继续使用规则排序。"
   >
     <template #actions>
       <div class="segmented">
@@ -174,7 +205,7 @@ onMounted(load)
       <div class="food-command-copy">
         <p class="eyebrow">餐饮雷达</p>
         <h2>先定位置，再给出可去的餐厅</h2>
-        <p class="muted">允许定位后会按附近餐厅生成推荐；没有定位时，会按城市和你的饮食画像展示可参考的推荐。</p>
+        <p class="muted">允许定位后按附近餐厅生成推荐；没有定位时，会按城市和你的饮食画像展示可参考的真实餐厅。</p>
         <div class="food-status-row">
           <span>{{ foodSourceLabel }}</span>
           <span v-if="foodResponse?.degraded">AI 暂不可用，已展示规则兜底</span>
@@ -196,9 +227,31 @@ onMounted(load)
       </div>
     </section>
 
+    <section v-else-if="active === 'travel'" class="food-command travel-command panel">
+      <div class="food-command-copy">
+        <p class="eyebrow">旅行雷达</p>
+        <h2>{{ targetCity }}适合你的景点</h2>
+        <p class="muted">输入目标城市后，只展示该城市内真实存在的景点，并按你的旅行探索、计划感和性格画像排序。</p>
+        <div class="food-status-row">
+          <span>{{ travelSourceLabel }}</span>
+          <span v-if="travelResponse?.degraded">AI 暂不可用，已展示规则兜底</span>
+          <span v-else-if="travelResponse">同城景点排序</span>
+        </div>
+      </div>
+      <div class="food-controls">
+        <label class="field compact-field">
+          <span>目标城市</span>
+          <input v-model="city" placeholder="输入城市，例如成都" @keyup.enter="loadTravel" />
+        </label>
+        <div class="toolbar food-control-actions">
+          <button class="primary" type="button" :disabled="loading" @click="loadTravel">生成景点推荐</button>
+        </div>
+      </div>
+    </section>
+
     <div v-if="notice" class="notice">{{ notice }}</div>
     <div v-if="error" class="error">{{ error }}</div>
-    <LoadingState v-if="loading" :message="active === 'food' ? '正在计算附近餐饮...' : '正在计算推荐排序...'" />
+    <LoadingState v-if="loading" :message="active === 'food' ? '正在计算附近餐饮...' : active === 'travel' ? '正在筛选同城景点...' : '正在计算推荐排序...'" />
 
     <template v-else>
       <template v-if="active === 'food'">
@@ -209,13 +262,11 @@ onMounted(load)
           action-label="去完成测试"
           action-to="/tests/personality"
         />
-
         <EmptyState
           v-else-if="!foodItems.length"
           title="暂时没有餐饮推荐"
           description="尝试允许定位，或输入城市后重新刷新。"
         />
-
         <section v-else class="food-results">
           <article v-for="(item, index) in foodItems" :key="`${item.name}-${index}`" class="card food-card">
             <div class="food-card-head">
@@ -227,26 +278,66 @@ onMounted(load)
               </div>
               <span class="score-pill">{{ item.matchScore }}%</span>
             </div>
-
             <p class="food-reason">{{ item.reason || '这家店与你当前的饮食画像匹配度较高。' }}</p>
-
             <div class="food-facts">
               <span v-if="formatDistance(item.distanceMeters)">{{ formatDistance(item.distanceMeters) }}</span>
               <span v-if="item.rating">评分 {{ item.rating }}</span>
               <span v-if="item.priceLevel">{{ item.priceLevel }}</span>
             </div>
-
             <div v-if="item.tags?.length" class="tag-row">
               <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
             </div>
-
-            <p v-if="submittedFood[item.name]" class="notice compact">已记录反馈：{{ submittedFood[item.name] }}</p>
-
+            <p v-if="submittedAi[item.name]" class="notice compact">已记录反馈：{{ submittedAi[item.name] }}</p>
             <div class="toolbar food-card-actions">
               <a v-if="item.mapUrl" class="button secondary small" :href="item.mapUrl" target="_blank" rel="noreferrer">打开地图</a>
-              <button class="primary small" type="button" @click="feedbackFood(item, 'LIKE')">想去</button>
-              <button class="secondary small" type="button" @click="feedbackFood(item, 'NEUTRAL')">一般</button>
-              <button class="ghost small" type="button" @click="feedbackFood(item, 'DISLIKE')">避开</button>
+              <button class="primary small" type="button" @click="feedbackAi(item, 'LIKE')">想去</button>
+              <button class="secondary small" type="button" @click="feedbackAi(item, 'NEUTRAL')">一般</button>
+              <button class="ghost small" type="button" @click="feedbackAi(item, 'DISLIKE')">避开</button>
+            </div>
+          </article>
+        </section>
+      </template>
+
+      <template v-else-if="active === 'travel'">
+        <EmptyState
+          v-if="!travelItems.length"
+          title="暂时没有旅行推荐"
+          description="换一个城市，或稍后重新生成。"
+        />
+        <section v-else class="travel-shelf" :aria-label="`${targetCity}景点推荐`">
+          <article v-for="(item, index) in travelItems" :key="`${item.city}-${item.name}-${index}`" class="card travel-spot-card">
+            <div class="travel-spot-topline">
+              <span>{{ item.city || targetCity }}</span>
+              <strong>{{ item.matchScore }}%</strong>
+            </div>
+            <h2>{{ item.name }}</h2>
+            <p v-if="item.category" class="eyebrow">{{ item.category }}</p>
+            <p v-if="item.address" class="muted food-address">{{ item.address }}</p>
+            <p class="food-reason">{{ item.reason || '这个景点与你当前的旅行画像匹配度较高。' }}</p>
+            <div v-if="item.highlights?.length" class="travel-section compact-travel-section">
+              <p class="travel-label">适合你的看点</p>
+              <div class="tag-row">
+                <span v-for="point in item.highlights" :key="point">{{ point }}</span>
+              </div>
+            </div>
+            <div v-if="item.itinerary?.length" class="travel-section compact-travel-section">
+              <p class="travel-label">游览建议</p>
+              <ol class="travel-list">
+                <li v-for="step in item.itinerary" :key="step">{{ step }}</li>
+              </ol>
+            </div>
+            <div v-if="item.tips?.length" class="travel-section compact-travel-section">
+              <p class="travel-label">提醒</p>
+              <ul class="travel-list">
+                <li v-for="tip in item.tips" :key="tip">{{ tip }}</li>
+              </ul>
+            </div>
+            <p v-if="submittedAi[item.name]" class="notice compact">已记录反馈：{{ submittedAi[item.name] }}</p>
+            <div class="toolbar food-card-actions">
+              <a v-if="item.mapUrl" class="button secondary small" :href="item.mapUrl" target="_blank" rel="noreferrer">打开地图</a>
+              <button class="primary small" type="button" @click="feedbackAi(item, 'LIKE')">想去</button>
+              <button class="secondary small" type="button" @click="feedbackAi(item, 'NEUTRAL')">一般</button>
+              <button class="ghost small" type="button" @click="feedbackAi(item, 'DISLIKE')">避开</button>
             </div>
           </article>
         </section>
@@ -260,13 +351,11 @@ onMounted(load)
           action-label="去完成测试"
           action-to="/tests/personality"
         />
-
         <EmptyState
           v-else-if="!items.length"
           title="暂无推荐数据"
           description="当前场景没有可用推荐，请切换分类或稍后重试。"
         />
-
         <section v-else class="grid two">
           <article v-for="item in items" :key="item.id" class="card recommendation-card">
             <div class="split">

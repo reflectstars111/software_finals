@@ -84,6 +84,11 @@ export interface AiRecommendationItem {
   reason?: string
   tags?: string[]
   mapUrl?: string
+  city?: string
+  durationDays?: number
+  highlights?: string[]
+  itinerary?: string[]
+  tips?: string[]
 }
 
 export interface AiRecommendationResponse {
