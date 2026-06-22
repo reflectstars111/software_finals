@@ -31,7 +31,7 @@ public class RecommendationController {
     }
 
     @GetMapping("/recommendations")
-    public ApiResponse<List<ApiDtos.RecommendationResponse>> list(
+    public ApiResponse<List<ApiDtos.LocationRecommendationResponse>> list(
             @RequestParam String scene,
             @RequestParam(required = false) String province,
             @RequestParam(required = false) String city,

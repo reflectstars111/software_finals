@@ -83,7 +83,7 @@ export const reportApi = {
 
 export const recommendationApi = {
   list: (scene: string, region?: RegionInfo) =>
-    dataOf<Recommendation[]>(api.get('/recommendations', {
+    dataOf<LocationRecommendation[]>(api.get('/recommendations', {
       params: { scene, ...(region || {}) }
     })),
   feedback: (id: number, payload: { rating: string; comment?: string }) =>
