@@ -45,8 +45,13 @@ function getSceneLabel(scene: string): string {
 async function load() {
   loading.value = true
   error.value = ''
+  notice.value = ''
   try {
     items.value = await listRecommendations(active.value, region.value || undefined)
+    if (hasRegion.value && items.value.length > 0 &&
+        items.value.every(item => item.source !== 'ai')) {
+      notice.value = 'AI 推荐暂不可用（API Key 未配置或网络异常），已降级为通用推荐'
+    }
   } catch (err) {
     error.value = (err as Error).message || '推荐加载失败，请稍后重试。'
   } finally {
@@ -64,6 +69,7 @@ async function loadRegion() {
 }
 
 function onRegionChanged() {
+  notice.value = ''
   loadRegion().then(() => load())
 }
 
@@ -90,8 +96,7 @@ function isAi(item: LocationRecommendation): boolean {
 
 watch(active, load)
 onMounted(() => {
-  loadRegion()
-  load()
+  loadRegion().then(() => load())
 })
 </script>
 
@@ -111,7 +116,7 @@ onMounted(() => {
 
     <RegionSelector @update:has-region="hasRegion = $event" @region-changed="onRegionChanged" />
 
-    <div v-if="notice" class="notice">{{ notice }}</div>
+    <div v-if="notice" class="notice info">{{ notice }}</div>
     <div v-if="error" class="error">{{ error }}</div>
     <LoadingState v-if="loading" message="正在计算推荐排序..." />
 
@@ -188,5 +193,11 @@ onMounted(() => {
   color: var(--signal-dim, #92400e);
   font-style: italic;
   margin-top: 0.25rem;
+}
+
+.notice.info {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
 }
 </style>
