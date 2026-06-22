@@ -5,8 +5,13 @@ import type {
   AdminUser,
   ApiResponse,
   AuthResponse,
+  CommentResponse,
+  CreateCommentRequest,
+  CreatePostRequest,
   MatchInvite,
   MatchReport,
+  PostListResponse,
+  PostResponse,
   Question,
   Recommendation,
   RecommendationRule,
@@ -109,4 +114,26 @@ export const adminApi = {
   updateRecommendationRule: (id: number, payload: unknown) =>
     dataOf<RecommendationRule>(api.put(`/admin/recommendation-rules/${id}`, payload)),
   deleteRecommendationRule: (id: number) => dataOf<void>(api.delete(`/admin/recommendation-rules/${id}`))
+}
+
+export const postApi = {
+  create: (payload: CreatePostRequest) => dataOf<PostResponse>(api.post('/posts', payload)),
+  list: (sort: string, domain?: string, page = 0) =>
+    dataOf<PostListResponse>(api.get('/posts', { params: { sort, domain, page } })),
+  get: (id: number) => dataOf<PostResponse>(api.get(`/posts/${id}`)),
+  update: (id: number, payload: CreatePostRequest) => dataOf<PostResponse>(api.put(`/posts/${id}`, payload)),
+  delete: (id: number) => dataOf<void>(api.delete(`/posts/${id}`)),
+  mine: (page = 0) => dataOf<PostListResponse>(api.get('/posts/mine', { params: { page } })),
+  like: (id: number) => dataOf<void>(api.post(`/posts/${id}/like`)),
+  unlike: (id: number) => dataOf<void>(api.delete(`/posts/${id}/like`)),
+  favorite: (id: number) => dataOf<void>(api.post(`/posts/${id}/favorite`)),
+  unfavorite: (id: number) => dataOf<void>(api.delete(`/posts/${id}/favorite`)),
+  favorites: (page = 0) => dataOf<PostListResponse>(api.get('/posts/favorites', { params: { page } })),
+  batchUnfavorite: (ids: number[]) => dataOf<void>(api.delete('/posts/favorites/batch', { data: ids })),
+  createComment: (postId: number, payload: CreateCommentRequest) =>
+    dataOf<CommentResponse>(api.post(`/posts/${postId}/comments`, payload)),
+  listComments: (postId: number, page = 0) =>
+    dataOf<CommentResponse[]>(api.get(`/posts/${postId}/comments`, { params: { page } })),
+  deleteComment: (postId: number, commentId: number) =>
+    dataOf<void>(api.delete(`/posts/${postId}/comments/${commentId}`))
 }

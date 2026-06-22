@@ -23,7 +23,10 @@ const router = createRouter({
     { path: '/match', component: MatchView, meta: { auth: true } },
     { path: '/profile', component: ProfileView, meta: { auth: true } },
     { path: '/admin', component: AdminView, meta: { auth: true, admin: true } },
-    { path: '/share/:token', component: ShareView }
+    { path: '/share/:token', component: ShareView },
+    { path: '/community', component: () => import('./views/community/CommunityView.vue'), meta: { auth: true } },
+    { path: '/community/create', component: () => import('./views/community/PostCreateView.vue'), meta: { auth: true } },
+    { path: '/community/post/:id', component: () => import('./views/community/PostDetailView.vue'), meta: { auth: true } }
   ]
 })
 

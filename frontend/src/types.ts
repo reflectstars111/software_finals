@@ -107,6 +107,48 @@ export interface UserFeedback {
   createdAt: string
 }
 
+// Community
+export interface PostResponse {
+  id: number
+  author: UserProfile
+  content: string
+  images: string
+  domainTag: string
+  styleTags: string[]
+  aiVector: Record<string, number>
+  aiReviewStatus: string
+  likeCount: number
+  favoriteCount: number
+  commentCount: number
+  viewCount: number
+  compatibility: number
+  showCompatibility: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PostListResponse {
+  items: PostResponse[]
+  total: number
+}
+
+export interface CommentResponse {
+  id: number
+  content: string
+  user: UserProfile
+  createdAt: string
+}
+
+export interface CreatePostRequest {
+  content: string
+  domainTag: string
+  styleTags?: string[]
+}
+
+export interface CreateCommentRequest {
+  content: string
+}
+
 export interface AdminStats {
   users: number
   questions: number

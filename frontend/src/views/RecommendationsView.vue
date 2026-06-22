@@ -7,11 +7,21 @@ import type { Recommendation } from '../types'
 import { listRecommendations, submitFeedback } from '../services/recommendationService'
 
 const tabs: Array<{ value: string; label: string }> = [
-  { value: 'food', label: '餐饮推荐' },
-  { value: 'travel', label: '旅游推荐' },
-  { value: 'social', label: '社交推荐' },
-  { value: 'outfit', label: '穿搭推荐' }
+  { value: 'food', label: '餐饮' },
+  { value: 'travel', label: '旅行' },
+  { value: 'social', label: '社交' },
+  { value: 'outfit', label: '穿搭' },
+  { value: 'career', label: '职业' },
+  { value: 'community', label: '社区' }
 ]
+
+const sceneLabels: Record<string, string> = {
+  FOOD: '餐饮推荐',
+  TRAVEL: '旅行推荐',
+  SOCIAL: '社交推荐',
+  OUTFIT: '穿搭推荐',
+  CAREER: '职业推荐'
+}
 
 const active = ref('food')
 const items = ref<Recommendation[]>([])
@@ -19,6 +29,14 @@ const submitted = ref<Record<number, string>>({})
 const loading = ref(true)
 const error = ref('')
 const notice = ref('')
+
+function switchTab(tab: string) {
+  if (tab === 'community') {
+    location.href = '/community'
+    return
+  }
+  active.value = tab
+}
 
 async function load() {
   loading.value = true
@@ -37,12 +55,20 @@ async function feedback(item: Recommendation, rating: string) {
     await submitFeedback(item.id, rating)
     submitted.value[item.id] = rating
     notice.value = rating === 'DISLIKE'
-      ? '已收到反馈，后续将减少相似类型推荐。'
-      : '已收到反馈，后续将优先推荐相似内容。'
+      ? '已收到反馈，后续会减少相似类型推荐。'
+      : '已收到反馈，后续会优先推荐相似内容。'
     await load()
   } catch (err) {
-    error.value = (err as Error).message || '反馈提交失败'
+    error.value = (err as Error).message || '反馈提交失败。'
   }
+}
+
+function sceneLabel(scene: string) {
+  return sceneLabels[scene] || '生活推荐'
+}
+
+function feedbackLabel(rating: string) {
+  return rating === 'LIKE' ? '喜欢' : rating === 'NEUTRAL' ? '一般' : '不喜欢'
 }
 
 watch(active, load)
@@ -53,11 +79,11 @@ onMounted(load)
   <PageContainer
     eyebrow="生活推荐"
     title="把画像变成可以行动的生活建议"
-    description="得分基于基础分 + 标签偏好 + 规则权重 + 性格维度信号调整。"
+    description="百分数表示当前推荐与你最近测评画像、历史反馈和后台规则的综合适配度。"
   >
     <template #actions>
       <div class="segmented">
-        <button v-for="tab in tabs" :key="tab.value" :class="{ active: active === tab.value }" @click="active = tab.value">
+        <button v-for="tab in tabs" :key="tab.value" :class="{ active: active === tab.value }" @click="switchTab(tab.value)">
           {{ tab.label }}
         </button>
       </div>
@@ -69,8 +95,8 @@ onMounted(load)
 
     <EmptyState
       v-else-if="error.includes('请先完成')"
-      title="请先完成测试，系统将根据你的画像生成个性化推荐。"
-      description="完成测评后，系统会根据性格、场景偏好和历史反馈给出可解释推荐。"
+      title="请先完成基础性格测试"
+      description="完成测评后，系统会根据你的画像、场景偏好和历史反馈给出推荐。"
       action-label="去完成测试"
       action-to="/tests/personality"
     />
@@ -85,16 +111,16 @@ onMounted(load)
       <article v-for="item in items" :key="item.id" class="card recommendation-card">
         <div class="split">
           <div>
-            <p class="eyebrow">{{ item.scene === 'FOOD' ? '餐饮推荐' : item.scene === 'TRAVEL' ? '旅游推荐' : '社交推荐' }}</p>
+            <p class="eyebrow">{{ sceneLabel(item.scene) }}</p>
             <h2>{{ item.title }}</h2>
           </div>
-          <span class="score-pill">{{ item.score }}%</span>
+          <span class="score-pill" title="综合适配度">{{ item.score }}%</span>
         </div>
         <p>{{ item.description }}</p>
         <div class="tag-row">
           <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
         </div>
-        <p v-if="submitted[item.id]" class="notice compact">已记录反馈：{{ submitted[item.id] }}</p>
+        <p v-if="submitted[item.id]" class="notice compact">已记录反馈：{{ feedbackLabel(submitted[item.id]) }}</p>
         <div class="toolbar">
           <button class="primary" type="button" @click="feedback(item, 'LIKE')">喜欢</button>
           <button class="secondary" type="button" @click="feedback(item, 'NEUTRAL')">一般</button>

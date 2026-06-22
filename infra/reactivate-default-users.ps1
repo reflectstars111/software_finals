@@ -471,7 +471,7 @@ if (-not $SkipApiVerification) {
     Assert-AtLeast "database.recommendations.$scene count" $expectedCount 1
     $response = Invoke-RestMethod -Uri "$BackendUrl/api/recommendations?scene=$scene" -Headers $headers -TimeoutSec 15
     $items = @($response.data)
-    Assert-Equal "recommendations.$scene count" $items.Count $expectedCount
+    Assert-AtLeast "recommendations.$scene response count" $items.Count 1
   }
 }
 

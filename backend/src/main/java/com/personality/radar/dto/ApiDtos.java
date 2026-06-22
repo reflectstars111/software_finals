@@ -207,4 +207,46 @@ public final class ApiDtos {
             String comment,
             Instant createdAt) {
     }
+
+    // === Community: Post DTOs ===
+    public record CreatePostRequest(
+            @NotBlank String content,
+            @NotBlank String domainTag,
+            List<String> styleTags) {
+    }
+
+    public record PostResponse(
+            Long id,
+            UserProfileResponse author,
+            String content,
+            String images,
+            String domainTag,
+            List<String> styleTags,
+            Map<String, Integer> aiVector,
+            String aiReviewStatus,
+            int likeCount,
+            int favoriteCount,
+            int commentCount,
+            int viewCount,
+            int compatibility,
+            boolean showCompatibility,
+            Instant createdAt,
+            Instant updatedAt) {
+    }
+
+    public record PostListResponse(
+            List<PostResponse> items,
+            int total) {
+    }
+
+    public record CreateCommentRequest(
+            @NotBlank String content) {
+    }
+
+    public record CommentResponse(
+            Long id,
+            String content,
+            UserProfileResponse user,
+            Instant createdAt) {
+    }
 }

@@ -3,6 +3,7 @@ package com.personality.radar.service;
 import com.personality.radar.common.BusinessException;
 import com.personality.radar.domain.Feedback;
 import com.personality.radar.domain.FeedbackRating;
+import com.personality.radar.domain.PersonalityDimension;
 import com.personality.radar.domain.RecommendationItem;
 import com.personality.radar.domain.RecommendationRule;
 import com.personality.radar.domain.SceneType;
@@ -17,6 +18,7 @@ import com.personality.radar.repository.RecommendationRuleRepository;
 import com.personality.radar.repository.TestResultRepository;
 import com.personality.radar.repository.UserPreferenceRepository;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,16 +49,17 @@ public class RecommendationService {
     @Transactional(readOnly = true)
     public List<ApiDtos.RecommendationResponse> recommend(UserAccount user, String sceneValue) {
         SceneType scene = EnumParser.sceneType(sceneValue);
-        TestResult result = results.findFirstByUserAndTypeOrderByCreatedAtDesc(user, TestType.PERSONALITY)
-                .orElseThrow(() -> new BusinessException(400, "请先完成基础性格测试"));
+        Map<String, Integer> mergedScores = mergedLatestScores(user);
         Map<String, Integer> preferenceMap = preferences.findByUser(user).stream()
                 .collect(Collectors.toMap(UserPreference::getTag, UserPreference::getWeight));
         Map<String, Integer> ruleMap = rules.findByActiveTrueOrderByTagAsc().stream()
                 .collect(Collectors.toMap(RecommendationRule::getTag, RecommendationRule::getWeight));
+
         return items.findBySceneAndActiveTrue(scene).stream()
                 .map(item -> DtoMapper.recommendation(item,
-                        RecommendationRanker.score(item.getBaseScore(), item.getTags(), preferenceMap, result.getScores(), ruleMap)))
+                        RecommendationRanker.score(item.getBaseScore(), item.getTags(), preferenceMap, mergedScores, ruleMap)))
                 .sorted(Comparator.comparing(ApiDtos.RecommendationResponse::score).reversed())
+                .limit(10)
                 .toList();
     }
 
@@ -73,9 +76,9 @@ public class RecommendationService {
         feedbacks.save(feedback);
 
         int delta = switch (rating) {
-            case LIKE -> 8;
-            case NEUTRAL -> 2;
-            case DISLIKE -> -8;
+            case LIKE -> 3;
+            case NEUTRAL -> 1;
+            case DISLIKE -> -3;
         };
         for (String tag : item.getTags()) {
             UserPreference preference = preferences.findByUserAndTag(user, tag).orElseGet(() -> {
@@ -100,5 +103,26 @@ public class RecommendationService {
                         f.getComment(),
                         f.getCreatedAt()))
                 .toList();
+    }
+
+    private Map<String, Integer> mergedLatestScores(UserAccount user) {
+        TestResult primary = results.findFirstByUserAndTypeOrderByCreatedAtDesc(user, TestType.PERSONALITY)
+                .orElseThrow(() -> new BusinessException(400, "请先完成基础性格测试"));
+
+        Map<String, Integer> mergedScores = new HashMap<>();
+        for (PersonalityDimension dimension : PersonalityDimension.values()) {
+            mergedScores.put(dimension.name(), 50);
+        }
+        mergedScores.putAll(primary.getScores());
+
+        for (TestType type : TestType.values()) {
+            if (type == TestType.PERSONALITY) {
+                continue;
+            }
+            results.findFirstByUserAndTypeOrderByCreatedAtDesc(user, type)
+                    .ifPresent(result -> result.getScores()
+                            .forEach((dimension, score) -> mergedScores.merge(dimension, score, Math::max)));
+        }
+        return mergedScores;
     }
 }
