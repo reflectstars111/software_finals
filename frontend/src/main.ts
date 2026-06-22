@@ -6,7 +6,7 @@ import './styles.css'
 
 async function init() {
   if (import.meta.env.VITE_MOCK === 'true') {
-    await import('./mock')
+
   }
 
   createApp(App).use(createPinia()).use(router).mount('#app')
