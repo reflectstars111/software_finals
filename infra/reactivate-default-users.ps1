@@ -395,6 +395,21 @@ if (-not $SkipDockerBuild) {
 
 Wait-Http -Url "$BackendUrl/actuator/health" -Name "Backend health"
 
+$regionSqlFile = Join-Path $InfraDir "init-region-data.sql"
+if (Test-Path -LiteralPath $regionSqlFile) {
+  Write-Host ""
+  Write-Host "==> Import region data (provinces/cities/districts)"
+  $previousErrorAction = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  Get-Content -LiteralPath $regionSqlFile -Raw | docker exec -i -e "MYSQL_PWD=$Password" $Container mysql --force --default-character-set=utf8mb4 "-u$User" $Database 2>&1 | ForEach-Object {
+    if ($_ -match "ERROR") { Write-Host "  [SKIP] $_" } else { Write-Host "  $_" }
+  }
+  $ErrorActionPreference = $previousErrorAction
+  Write-Host "Region data check complete."
+} else {
+  Write-Warning "Region data file not found: $regionSqlFile -- skipping region import."
+}
+
 $reactivateSql = @"
 UPDATE users
 SET active = 1,

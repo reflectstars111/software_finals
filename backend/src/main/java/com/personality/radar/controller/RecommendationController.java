@@ -1,4 +1,4 @@
-﻿package com.personality.radar.controller;
+package com.personality.radar.controller;
 
 import com.personality.radar.common.ApiResponse;
 import com.personality.radar.dto.ApiDtos;

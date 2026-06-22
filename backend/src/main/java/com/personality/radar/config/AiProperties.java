@@ -1,4 +1,4 @@
-﻿package com.personality.radar.config;
+package com.personality.radar.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

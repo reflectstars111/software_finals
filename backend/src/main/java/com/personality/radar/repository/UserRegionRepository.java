@@ -1,4 +1,4 @@
-﻿package com.personality.radar.repository;
+package com.personality.radar.repository;
 
 import com.personality.radar.domain.UserAccount;
 import com.personality.radar.domain.UserRegion;

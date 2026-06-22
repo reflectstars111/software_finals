@@ -1,4 +1,4 @@
-﻿package com.personality.radar.service;
+package com.personality.radar.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

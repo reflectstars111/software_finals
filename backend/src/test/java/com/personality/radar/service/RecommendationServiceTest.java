@@ -16,6 +16,7 @@ import com.personality.radar.repository.RecommendationItemRepository;
 import com.personality.radar.repository.RecommendationRuleRepository;
 import com.personality.radar.repository.TestResultRepository;
 import com.personality.radar.repository.UserPreferenceRepository;
+import com.personality.radar.service.AiRecommendationService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,8 @@ class RecommendationServiceTest {
         FeedbackRepository feedbacks = mock(FeedbackRepository.class);
         UserPreferenceRepository preferences = mock(UserPreferenceRepository.class);
         RecommendationRuleRepository rules = mock(RecommendationRuleRepository.class);
-        RecommendationService service = new RecommendationService(items, results, feedbacks, preferences, rules);
+        AiRecommendationService aiRec = mock(AiRecommendationService.class);
+        RecommendationService service = new RecommendationService(items, results, feedbacks, preferences, rules, aiRec);
 
         UserAccount user = new UserAccount();
         user.setPhone("13800000000");

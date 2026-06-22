@@ -1,4 +1,4 @@
-﻿package com.personality.radar.service;
+package com.personality.radar.service;
 
 import com.personality.radar.domain.Question;
 import com.personality.radar.domain.QuestionOption;

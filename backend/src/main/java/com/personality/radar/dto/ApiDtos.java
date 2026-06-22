@@ -1,4 +1,4 @@
-﻿package com.personality.radar.dto;
+package com.personality.radar.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

@@ -1,4 +1,4 @@
-﻿package com.personality.radar.repository;
+package com.personality.radar.repository;
 
 import com.personality.radar.domain.District;
 import org.springframework.data.jpa.repository.JpaRepository;

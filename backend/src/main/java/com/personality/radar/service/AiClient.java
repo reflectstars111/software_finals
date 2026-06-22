@@ -1,4 +1,4 @@
-﻿package com.personality.radar.service;
+package com.personality.radar.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,7 +9,6 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -23,10 +22,10 @@ public class AiClient {
     public AiClient(AiProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
-        this.restTemplate = new RestTemplateBuilder()
-                .connectTimeout(Duration.ofSeconds(3))
-                .readTimeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
-                .build();
+        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(java.time.Duration.ofSeconds(3));
+        factory.setReadTimeout(java.time.Duration.ofSeconds(properties.getTimeoutSeconds()));
+        this.restTemplate = new RestTemplateBuilder().requestFactory(() -> factory).build();
     }
 
     public String chat(String systemPrompt, String userMessage) {
@@ -69,8 +68,12 @@ public class AiClient {
                 url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            JsonNode root = objectMapper.readTree(response.getBody());
-            return root.path("choices").get(0).path("message").path("content").asText();
+            try {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                return root.path("choices").get(0).path("message").path("content").asText();
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException("Failed to parse AI response", e);
+            }
         }
         return null;
     }

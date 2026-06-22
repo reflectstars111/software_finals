@@ -1,4 +1,4 @@
-﻿package com.personality.radar.domain;
+package com.personality.radar.domain;
 
 import jakarta.persistence.*;
 
