@@ -296,6 +296,14 @@ html { scroll-behavior: smooth; }
   font: 700 20px "DM Serif Display", serif;
 }
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+
+/* Profile cards — uniform height with vertical scroll */
+.profile-grid .panel {
+  display: flex; flex-direction: column; min-height: 0; max-height: 420px;
+}
+.profile-grid .panel h2 { flex-shrink: 0; }
+.profile-grid .panel .table-wrap { overflow: auto; flex: 1; }
+.profile-grid .panel .muted.section-gap { flex-shrink: 0; }
 table { width: 100%; min-width: 560px; border-collapse: collapse; background: var(--surface); }
 th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
 th { background: #f8f7fa; color: var(--muted); font-size: 12px; font-weight: 700; }

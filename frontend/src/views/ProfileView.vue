@@ -87,7 +87,7 @@ onMounted(load)
       </article>
     </section>
 
-    <section class="grid two section-gap">
+    <section class="grid two section-gap profile-grid">
       <!-- 历史测试记录 -->
       <article class="panel">
         <h2>历史测试记录</h2>
@@ -138,7 +138,7 @@ onMounted(load)
       </article>
     </section>
 
-    <section class="grid two section-gap">
+    <section class="grid two section-gap profile-grid">
       <!-- 隐私授权管理 -->
       <article class="panel">
         <h2>隐私授权管理</h2>
