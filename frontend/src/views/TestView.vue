@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Brain, UtensilsCrossed, MapPin, Users } from 'lucide-vue-next'
+import BaseModal from '../components/common/BaseModal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
@@ -10,10 +12,16 @@ import { loadQuestions, submitTest } from '../services/testService'
 const route = useRoute()
 const router = useRouter()
 const questionsByType = ref<Record<string, Question[]>>({})
-const answers = ref<Record<number, number>>({})
+const answers = ref<Record<string, number>>({})
+
+/** 用 "type:id" 组合键避免跨模块题目 ID 冲突 */
+function answerKey(q: { type: string; id: number }) {
+  return `${q.type}:${q.id}`
+}
 const currentIndex = ref(0)
 const loading = ref(true)
 const submitting = ref(false)
+const showConfirm = ref(false)
 const error = ref('')
 const notice = ref('')
 
@@ -24,13 +32,16 @@ const allQuestions = computed(() =>
   })
 )
 const currentQuestion = computed(() => allQuestions.value[currentIndex.value] || null)
-const answeredCount = computed(() => allQuestions.value.filter((q) => answers.value[q.id]).length)
+const answeredCount = computed(() => allQuestions.value.filter((q) => answers.value[answerKey(q)]).length)
 const totalProgress = computed(() =>
   allQuestions.value.length ? Math.round((answeredCount.value / allQuestions.value.length) * 100) : 0
 )
 const moduleKeys = ['personality', 'food', 'travel', 'social']
 const moduleLabels: Record<string, string> = {
   personality: '基础性格', food: '饮食偏好', travel: '旅游偏好', social: '社交倾向'
+}
+const moduleIcons: Record<string, any> = {
+  personality: Brain, food: UtensilsCrossed, travel: MapPin, social: Users
 }
 
 function jumpToType(type: string) {
@@ -41,7 +52,7 @@ function jumpToType(type: string) {
 function next() {
   error.value = ''
   if (!currentQuestion.value) return
-  if (!answers.value[currentQuestion.value.id]) {
+  if (!answers.value[answerKey(currentQuestion.value)]) {
     error.value = '请先回答当前题目，再进入下一题。'
     return
   }
@@ -53,7 +64,7 @@ function prev() {
   currentIndex.value = Math.max(currentIndex.value - 1, 0)
 }
 
-async function submit() {
+function submit() {
   error.value = ''
   notice.value = ''
   const missing = allQuestions.value.length - answeredCount.value
@@ -61,16 +72,20 @@ async function submit() {
     error.value = `你还有 ${missing} 道题未完成，请完成后再生成报告。`
     return
   }
-  if (!window.confirm('确认提交后将生成新的画像报告，并覆盖当前推荐依据。')) return
+  showConfirm.value = true
+}
+
+async function confirmSubmit() {
+  showConfirm.value = false
   submitting.value = true
   try {
     // Submit all four types
     for (const type of moduleKeys) {
       const typeQuestions = questionsByType.value[type] || []
       const typeAnswers = typeQuestions
-        .filter((q) => answers.value[q.id])
+        .filter((q) => answers.value[answerKey(q)])
         .map((q) => {
-          const opt = q.options.find((o) => o.label === String(answers.value[q.id]))
+          const opt = q.options.find((o) => o.label === String(answers.value[answerKey(q)]))
           return { questionId: q.id, optionIds: opt ? [opt.id] : [] }
         })
       if (typeAnswers.length > 0) {
@@ -100,20 +115,58 @@ async function load() {
 }
 
 watch(() => route.params.type, (value) => jumpToType((value as string) || 'personality'))
-onMounted(load)
+
+function handleKeydown(e: KeyboardEvent) {
+  if (loading.value || submitting.value || !currentQuestion.value) return
+  // 仅在真正需要文字输入时忽略按键（radio/checkbox 不拦截）
+  const el = e.target as HTMLElement
+  const tag = el?.tagName
+  if (
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    (tag === 'INPUT' && (el as HTMLInputElement).type !== 'radio' && (el as HTMLInputElement).type !== 'checkbox')
+  )
+    return
+
+  const key = e.key
+  if (key >= '1' && key <= '5') {
+    e.preventDefault()
+    answers.value[answerKey(currentQuestion.value)] = Number(key)
+    error.value = ''
+  } else if (key === 'Enter') {
+    e.preventDefault()
+    if (!answers.value[answerKey(currentQuestion.value)]) {
+      error.value = '请先回答当前题目，再进入下一题。'
+      return
+    }
+    if (currentIndex.value < allQuestions.value.length - 1) {
+      next()
+    } else {
+      submit()
+    }
+  }
+}
+
+onMounted(() => {
+  load()
+  window.addEventListener('keydown', handleKeydown)
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
   <PageContainer
     eyebrow="测试中心"
     title="完成四类测评，生成你的生活画像"
-    description="请按真实感受选择 1-5 级量表。所有测试结果由后端计算并持久化。"
+    description="请按真实感受选择 1-5 级量表（可按键盘 1-5 数字键快速选择）。所有测试结果由后端计算并持久化。"
   >
     <template #actions>
       <span class="progress-label">总进度 {{ totalProgress }}%</span>
     </template>
 
-    <div class="progress-track"><span :style="{ width: `${totalProgress}%` }"></span></div>
+    <div class="progress-track"><span class="progress-fill" :style="{ '--meter-width': `${totalProgress}%` }"></span></div>
     <div v-if="error" class="error">{{ error }}</div>
     <div v-if="notice" class="notice">{{ notice }}</div>
     <LoadingState v-if="loading" message="正在加载题库..." />
@@ -135,32 +188,65 @@ onMounted(load)
           :class="{ active: currentQuestion?.type === key }"
           @click="jumpToType(key)"
         >
-          <strong>{{ moduleLabels[key] }}测试</strong>
+          <strong>
+            <component :is="moduleIcons[key]" :size="16" class="icon-sm module-nav-icon" />
+            {{ moduleLabels[key] }}测试
+          </strong>
           <span>{{ questionsByType[key]?.length || 0 }} 题</span>
         </button>
       </aside>
 
-      <article v-if="currentQuestion" class="panel question-panel">
-        <div class="split">
-          <p class="eyebrow">{{ moduleLabels[currentQuestion.type] }}测试</p>
-          <strong>{{ currentIndex + 1 }} / {{ allQuestions.length }}</strong>
-        </div>
-        <h2>{{ currentQuestion.content }}</h2>
-        <div class="scale-grid">
-          <label v-for="n in 5" :key="n" :class="{ selected: answers[currentQuestion.id] === n }">
-            <input v-model="answers[currentQuestion.id]" type="radio" :name="String(currentQuestion.id)" :value="n" />
-            <span>{{ n }}</span>
-            <strong>{{ ['非常不同意','不太同意','一般','比较同意','非常同意'][n-1] }}</strong>
-          </label>
-        </div>
-        <div class="toolbar question-actions">
-          <button class="ghost" type="button" :disabled="currentIndex === 0" @click="prev">上一题</button>
-          <button v-if="currentIndex < allQuestions.length - 1" class="primary" type="button" @click="next">下一题</button>
-          <button v-else class="primary" type="button" :disabled="submitting" @click="submit">
-            {{ submitting ? '提交中...' : '生成报告' }}
+      <Transition name="question-slide" mode="out-in">
+        <article v-if="currentQuestion" :key="currentQuestion.id" class="panel question-panel">
+          <div class="split">
+            <p class="eyebrow">{{ moduleLabels[currentQuestion.type] }}测试</p>
+            <strong>{{ currentIndex + 1 }} / {{ allQuestions.length }}</strong>
+          </div>
+          <div class="mini-meter"><span class="question-progress-fill" :style="{ '--meter-width': `${(answeredCount / allQuestions.length) * 100}%` }"></span></div>
+          <h2>{{ currentQuestion.content }}</h2>
+          <div class="scale-grid">
+            <label v-for="n in 5" :key="n" :class="{ selected: answers[answerKey(currentQuestion)] === n }">
+              <input v-model="answers[answerKey(currentQuestion)]" type="radio" :name="answerKey(currentQuestion)" :value="n" />
+              <span>{{ n }}</span>
+              <strong>{{ ['非常不同意','不太同意','一般','比较同意','非常同意'][n-1] }}</strong>
+            </label>
+          </div>
+          <div class="toolbar question-actions">
+            <button class="ghost" type="button" :disabled="currentIndex === 0" @click="prev">上一题</button>
+            <button v-if="currentIndex < allQuestions.length - 1" class="primary" type="button" @click="next">下一题</button>
+            <button v-else class="primary" type="button" :disabled="submitting" @click="submit">
+              {{ submitting ? '提交中...' : '生成报告' }}
+            </button>
+          </div>
+        </article>
+      </Transition>
+
+      <BaseModal :open="showConfirm" title="确认提交" @close="showConfirm = false">
+        <p>提交后将生成新的画像报告，并覆盖当前推荐依据。</p>
+        <div class="toolbar modal-action-bar">
+          <button class="ghost" type="button" @click="showConfirm = false">取消</button>
+          <button class="primary" type="button" :disabled="submitting" @click="confirmSubmit">
+            {{ submitting ? '提交中...' : '确认提交' }}
           </button>
         </div>
-      </article>
+      </BaseModal>
     </section>
   </PageContainer>
 </template>
+
+<style scoped>
+.progress-fill,
+.question-progress-fill {
+  width: var(--meter-width);
+}
+
+.module-nav-icon {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.modal-action-bar {
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+</style>

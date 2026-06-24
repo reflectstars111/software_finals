@@ -1,4 +1,4 @@
-export interface ApiResponse<T> {
+﻿export interface ApiResponse<T> {
   code: number
   message: string
   data: T
@@ -73,33 +73,31 @@ export interface Recommendation {
   active?: boolean
 }
 
-export interface AiRecommendationItem {
-  name: string
-  category?: string
+export interface LocationRecommendation extends Recommendation {
   address?: string
-  distanceMeters?: number
-  rating?: number
-  priceLevel?: string
-  matchScore: number
-  reason?: string
-  tags?: string[]
-  mapUrl?: string
-  city?: string
-  durationDays?: number
-  highlights?: string[]
-  itinerary?: string[]
-  tips?: string[]
+  aiReason?: string
+  source?: 'ai' | 'general'
 }
 
-export interface AiRecommendationResponse {
-  recordId: number
-  scene: string
-  source: string
-  degraded: boolean
-  city?: string
-  generatedAt: string
-  items: AiRecommendationItem[]
+export interface SimpleRegion {
+  id: number
+  name: string
 }
+
+export interface RegionInfo {
+  province: string
+  city: string
+  district?: string
+}
+
+export interface RegionRecord {
+  province: string
+  city: string
+  district: string
+  isCurrent: boolean
+  createdAt: string
+}
+
 export interface MatchReport {
   id: number
   owner: UserProfile
@@ -132,6 +130,48 @@ export interface UserFeedback {
   rating: string
   comment?: string
   createdAt: string
+}
+
+// Community
+export interface PostResponse {
+  id: number
+  author: UserProfile
+  content: string
+  images: string
+  domainTag: string
+  styleTags: string[]
+  aiVector: Record<string, number>
+  aiReviewStatus: string
+  likeCount: number
+  favoriteCount: number
+  commentCount: number
+  viewCount: number
+  compatibility: number
+  showCompatibility: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PostListResponse {
+  items: PostResponse[]
+  total: number
+}
+
+export interface CommentResponse {
+  id: number
+  content: string
+  user: UserProfile
+  createdAt: string
+}
+
+export interface CreatePostRequest {
+  content: string
+  domainTag: string
+  styleTags?: string[]
+}
+
+export interface CreateCommentRequest {
+  content: string
 }
 
 export interface AdminStats {
@@ -180,3 +220,47 @@ export interface RecommendationRule {
   weight: number
   active: boolean
 }
+
+// === Friend & Chat ===
+export interface FriendInvite {
+  code: string
+  createdAt: string
+  status: 'ACTIVE' | 'USED' | 'REVOKED'
+  expiresAt: string
+}
+
+export interface FriendRequestItem {
+  id: number
+  fromUser: UserProfile
+  toUser: UserProfile
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'BLOCKED'
+  message: string
+  createdAt: string
+}
+
+export interface OpenMatchStatus {
+  enabled: boolean
+  message: string
+}
+
+export interface OpenMatchRecommendation {
+  user: UserProfile
+  score: number
+  topDimensions: string[]
+}
+
+export interface ChatMessage {
+  id: number
+  sender: UserProfile
+  content: string
+  read: boolean
+  createdAt: string
+}
+
+export interface ChatConversation {
+  friend: UserProfile
+  lastMessage: string
+  lastMessageTime: string
+  unreadCount: number
+}
+

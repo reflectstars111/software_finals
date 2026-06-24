@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { Users, HelpCircle, Lightbulb, MessageSquare, HeartHandshake } from 'lucide-vue-next'
 import { adminApi } from '../api'
+import BaseModal from '../components/common/BaseModal.vue'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
@@ -128,26 +130,27 @@ onMounted(load)
 
     <template v-else>
       <!-- Stats -->
-      <section class="grid five admin-metrics">
-        <div class="card metric"><strong>{{ stats?.users ?? 0 }}</strong><span>用户</span></div>
-        <div class="card metric"><strong>{{ stats?.questions ?? 0 }}</strong><span>题目</span></div>
-        <div class="card metric"><strong>{{ stats?.recommendations ?? 0 }}</strong><span>推荐项</span></div>
-        <div class="card metric"><strong>{{ stats?.feedbacks ?? 0 }}</strong><span>反馈</span></div>
-        <div class="card metric"><strong>{{ stats?.matches ?? 0 }}</strong><span>匹配</span></div>
+      <section class="grid five">
+        <div class="card metric"><Users :size="24" class="metric-icon" /><strong>{{ stats?.users ?? 0 }}</strong><span>用户</span></div>
+        <div class="card metric"><HelpCircle :size="24" class="metric-icon" /><strong>{{ stats?.questions ?? 0 }}</strong><span>题目</span></div>
+        <div class="card metric"><Lightbulb :size="24" class="metric-icon" /><strong>{{ stats?.recommendations ?? 0 }}</strong><span>推荐项</span></div>
+        <div class="card metric"><MessageSquare :size="24" class="metric-icon" /><strong>{{ stats?.feedbacks ?? 0 }}</strong><span>反馈</span></div>
+        <div class="card metric"><HeartHandshake :size="24" class="metric-icon" /><strong>{{ stats?.matches ?? 0 }}</strong><span>匹配</span></div>
       </section>
 
       <!-- Users + Rules -->
       <section class="grid two section-gap">
         <article class="panel">
           <h2>用户管理</h2>
-          <div class="table-wrap">
+          <EmptyState v-if="!users.length" title="暂无用户数据" description="用户注册后会显示在此列表中。" />
+          <div v-else class="table-wrap">
             <table>
               <thead><tr><th>手机号</th><th>昵称</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
                 <tr v-for="user in users" :key="user.id">
                   <td>{{ user.phone }}</td><td>{{ user.displayName }}</td>
                   <td>
-                    <select :value="user.role" @change="setUserRole(user, ($event.target as HTMLSelectElement).value)" style="min-height:30px;padding:2px 6px;">
+                    <select :value="user.role" @change="setUserRole(user, ($event.target as HTMLSelectElement).value)" class="filter-select">
                       <option value="USER">USER</option><option value="ADMIN">ADMIN</option>
                     </select>
                   </td>
@@ -160,15 +163,9 @@ onMounted(load)
         </article>
 
         <article class="panel">
-          <div class="split"><h2>推荐规则</h2><button class="primary small" type="button" @click="showRuleForm = !showRuleForm">+ 新建</button></div>
-          <!-- New rule form -->
-          <div v-if="showRuleForm" class="panel" style="margin-bottom:12px;background:var(--soft);">
-            <div class="field"><label>标签</label><input v-model="newRule.tag" placeholder="explore/structured/social/gentle" /></div>
-            <div class="field"><label>名称</label><input v-model="newRule.label" placeholder="中文名称" /></div>
-            <div class="field"><label>权重</label><input v-model.number="newRule.weight" type="number" min="1" max="10" /></div>
-            <button class="primary" type="button" @click="createRule">保存</button>
-          </div>
-          <div class="table-wrap">
+          <div class="split"><h2>推荐规则</h2><button class="primary small" type="button" @click="showRuleForm = true">+ 新建</button></div>
+          <EmptyState v-if="!rules.length" title="暂无推荐规则" description="点击「新建」添加推荐权重规则。" />
+          <div v-else class="table-wrap">
             <table>
               <thead><tr><th>标签</th><th>名称</th><th>权重</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
@@ -190,15 +187,6 @@ onMounted(load)
       <section class="grid two section-gap">
         <article class="panel">
           <div class="split"><h2>题库管理</h2><button class="primary small" type="button" @click="openNewQuestion">+ 新建</button></div>
-          <!-- Question form modal -->
-          <div v-if="showQuestionForm" class="panel" style="margin-bottom:12px;background:var(--soft);">
-            <div class="field"><label>类型</label><select v-model="editingQuestion!.type"><option>personality</option><option>food</option><option>travel</option><option>social</option></select></div>
-            <div class="field"><label>题目内容</label><input v-model="editingQuestion!.content" /></div>
-            <div class="toolbar">
-              <button class="primary" type="button" @click="saveQuestion">保存题目</button>
-              <button class="ghost" type="button" @click="showQuestionForm = false">取消</button>
-            </div>
-          </div>
           <EmptyState v-if="!questions.length" title="暂无题目" description="点击「新建」添加题目" />
           <div v-else class="table-wrap">
             <table>
@@ -219,17 +207,6 @@ onMounted(load)
 
         <article class="panel">
           <div class="split"><h2>推荐库管理</h2><button class="primary small" type="button" @click="openNewRec">+ 新建</button></div>
-          <div v-if="showRecForm" class="panel" style="margin-bottom:12px;background:var(--soft);">
-            <div class="field"><label>场景</label><select v-model="editingRec!.scene"><option>food</option><option>travel</option><option>social</option><option>outfit</option><option>career</option></select></div>
-            <div class="field"><label>标题</label><input v-model="editingRec!.title" /></div>
-            <div class="field"><label>描述</label><input v-model="editingRec!.description" /></div>
-            <div class="field"><label>标签（逗号分隔）</label><input :value="editingRec!.tags?.join(',') || ''" @input="(e: any) => editingRec!.tags = e.target.value.split(',').map((s: string) => s.trim())" /></div>
-            <div class="field"><label>基础分</label><input v-model.number="editingRec!.baseScore" type="number" min="0" max="100" /></div>
-            <div class="toolbar">
-              <button class="primary" type="button" @click="saveRec">保存</button>
-              <button class="ghost" type="button" @click="showRecForm = false">取消</button>
-            </div>
-          </div>
           <EmptyState v-if="!recommendations.length" title="暂无推荐项" description="点击「新建」添加推荐项" />
           <div v-else class="table-wrap">
             <table>
@@ -281,6 +258,45 @@ onMounted(load)
           </div>
         </article>
       </section>
+
+      <!-- Modals -->
+      <BaseModal :open="showQuestionForm" title="题目管理" @close="showQuestionForm = false">
+        <div class="field"><label>类型</label><select v-model="editingQuestion!.type"><option>personality</option><option>food</option><option>travel</option><option>social</option></select></div>
+        <div class="field"><label>题目内容</label><input v-model="editingQuestion!.content" /></div>
+        <div class="toolbar modal-action-bar">
+          <button class="ghost" type="button" @click="showQuestionForm = false">取消</button>
+          <button class="primary" type="button" @click="saveQuestion">保存题目</button>
+        </div>
+      </BaseModal>
+
+      <BaseModal :open="showRecForm" title="推荐项管理" @close="showRecForm = false">
+        <div class="field"><label>场景</label><select v-model="editingRec!.scene"><option>food</option><option>travel</option><option>social</option><option>outfit</option><option>career</option></select></div>
+        <div class="field"><label>标题</label><input v-model="editingRec!.title" /></div>
+        <div class="field"><label>描述</label><input v-model="editingRec!.description" /></div>
+        <div class="field"><label>标签（逗号分隔）</label><input :value="editingRec!.tags?.join(',') || ''" @input="(e: any) => editingRec!.tags = e.target.value.split(',').map((s: string) => s.trim())" /></div>
+        <div class="field"><label>基础分</label><input v-model.number="editingRec!.baseScore" type="number" min="0" max="100" /></div>
+        <div class="toolbar modal-action-bar">
+          <button class="ghost" type="button" @click="showRecForm = false">取消</button>
+          <button class="primary" type="button" @click="saveRec">保存</button>
+        </div>
+      </BaseModal>
+
+      <BaseModal :open="showRuleForm" title="新建规则" @close="showRuleForm = false">
+        <div class="field"><label>标签</label><input v-model="newRule.tag" placeholder="explore/structured/social/gentle" /></div>
+        <div class="field"><label>名称</label><input v-model="newRule.label" placeholder="中文名称" /></div>
+        <div class="field"><label>权重</label><input v-model.number="newRule.weight" type="number" min="1" max="10" /></div>
+        <div class="toolbar modal-action-bar">
+          <button class="ghost" type="button" @click="showRuleForm = false">取消</button>
+          <button class="primary" type="button" @click="createRule">保存</button>
+        </div>
+      </BaseModal>
     </template>
   </PageContainer>
 </template>
+
+<style scoped>
+.modal-action-bar {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+</style>

@@ -61,6 +61,22 @@ public final class DtoMapper {
                 item.isActive());
     }
 
+    public static ApiDtos.LocationRecommendationResponse locationRecommendation(
+            RecommendationItem item, int score, String address, String aiReason, String source) {
+        return new ApiDtos.LocationRecommendationResponse(
+                item.getId(),
+                item.getScene().name().toLowerCase(),
+                item.getTitle(),
+                item.getDescription(),
+                List.copyOf(item.getTags()),
+                score,
+                item.getBaseScore(),
+                item.isActive(),
+                address,
+                aiReason,
+                source);
+    }
+
     public static ApiDtos.AdminUserResponse adminUser(UserAccount user) {
         return new ApiDtos.AdminUserResponse(
                 user.getId(),

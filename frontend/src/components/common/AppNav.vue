@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Radar } from 'lucide-vue-next'
 import { useAuthStore } from '../../stores/auth'
 
 const route = useRoute()
@@ -14,7 +15,7 @@ const navItems = computed(() => [
   { path: '/recommendations', label: '推荐' },
   { path: '/match', label: '匹配' },
   { path: '/profile', label: '我的' },
-  ...(auth.isAdmin ? [{ path: '/admin', label: '后台' }] : [])
+  ...(auth.isAdmin ? [{ path: '/admin', label: '后台', admin: true }] : [])
 ])
 
 function isActive(path: string) {
@@ -31,7 +32,7 @@ function logout() {
 <template>
   <header class="app-header">
     <RouterLink class="brand" to="/">
-      <span class="brand-mark">R</span>
+      <span class="brand-mark"><Radar :size="20" /></span>
       <span>
         <strong>性格雷达</strong>
         <small>生活指南</small>
@@ -46,6 +47,7 @@ function logout() {
         :class="{ active: isActive(item.path) }"
       >
         {{ item.label }}
+        <span v-if="item.admin" class="admin-badge">管理</span>
       </RouterLink>
     </nav>
 

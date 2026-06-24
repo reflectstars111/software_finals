@@ -1,19 +1,33 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 import type {
   AdminDashboard,
   AdminStats,
   AdminUser,
   ApiResponse,
-  AiRecommendationResponse,
   AuthResponse,
+  ChatConversation,
+  ChatMessage,
+  CommentResponse,
+  CreateCommentRequest,
+  CreatePostRequest,
+  FriendInvite,
+  FriendRequestItem,
+  LocationRecommendation,
   MatchInvite,
   MatchReport,
+  OpenMatchRecommendation,
+  OpenMatchStatus,
+  PostListResponse,
+  PostResponse,
   Question,
   Recommendation,
   RecommendationRule,
+  RegionInfo,
+  RegionRecord,
   Report,
   ReportSnapshot,
   ShareLinkSummary,
+  SimpleRegion,
   TestResult,
   UserFeedback,
   UserProfile
@@ -74,20 +88,26 @@ export const reportApi = {
 }
 
 export const recommendationApi = {
-  list: (scene: string) => dataOf<Recommendation[]>(api.get('/recommendations', { params: { scene } })),
+  list: (scene: string, region?: RegionInfo) =>
+    dataOf<LocationRecommendation[]>(api.get('/recommendations', {
+      params: { scene, ...(region || {}) }
+    })),
   feedback: (id: number, payload: { rating: string; comment?: string }) =>
     dataOf<void>(api.post(`/recommendations/${id}/feedback`, payload)),
   myFeedback: () => dataOf<UserFeedback[]>(api.get('/recommendations/feedback/me'))
 }
 
-
-export const aiRecommendationApi = {
-  recommend: (params: { scene?: string; lat?: number; lng?: number; city?: string; limit?: number }) =>
-    dataOf<AiRecommendationResponse>(api.get('/recommendations/ai', { params })),
-  feedback: (recordId: number, payload: { rating: string; comment?: string; itemName?: string }) =>
-    dataOf<void>(api.post(`/recommendations/ai/${recordId}/feedback`, payload)),
-  history: () => dataOf<unknown[]>(api.get('/recommendations/ai/history'))
+export const regionApi = {
+  provinces: () => dataOf<SimpleRegion[]>(api.get('/regions/provinces')),
+  cities: (provinceId: number) => dataOf<SimpleRegion[]>(api.get('/regions/cities', { params: { provinceId } })),
+  districts: (cityId: number) => dataOf<SimpleRegion[]>(api.get('/regions/districts', { params: { cityId } })),
+  getMyRegion: () => dataOf<RegionInfo | null>(api.get('/user/region')),
+  saveMyRegion: (payload: RegionInfo) => dataOf<RegionInfo>(api.post('/user/region', payload)),
+  history: () => dataOf<RegionRecord[]>(api.get('/user/region/history')),
+  ipLocate: () => dataOf<RegionInfo | null>(api.get('/user/region/ip-locate')),
+  reverseGeocode: (lat: number, lng: number) => dataOf<RegionInfo | null>(api.get('/user/region/reverse-geocode', { params: { lat, lng } }))
 }
+
 export const matchApi = {
   create: (friendPhone: string) => dataOf<MatchReport>(api.post('/matches', { friendPhone })),
   list: () => dataOf<MatchReport[]>(api.get('/matches')),
@@ -118,4 +138,58 @@ export const adminApi = {
   updateRecommendationRule: (id: number, payload: unknown) =>
     dataOf<RecommendationRule>(api.put(`/admin/recommendation-rules/${id}`, payload)),
   deleteRecommendationRule: (id: number) => dataOf<void>(api.delete(`/admin/recommendation-rules/${id}`))
+}
+
+export const postApi = {
+  create: (payload: CreatePostRequest) => dataOf<PostResponse>(api.post('/posts', payload)),
+  list: (sort: string, domain?: string, page = 0) =>
+    dataOf<PostListResponse>(api.get('/posts', { params: { sort, domain, page } })),
+  get: (id: number) => dataOf<PostResponse>(api.get(`/posts/${id}`)),
+  update: (id: number, payload: CreatePostRequest) => dataOf<PostResponse>(api.put(`/posts/${id}`, payload)),
+  delete: (id: number) => dataOf<void>(api.delete(`/posts/${id}`)),
+  mine: (page = 0) => dataOf<PostListResponse>(api.get('/posts/mine', { params: { page } })),
+  like: (id: number) => dataOf<void>(api.post(`/posts/${id}/like`)),
+  unlike: (id: number) => dataOf<void>(api.delete(`/posts/${id}/like`)),
+  favorite: (id: number) => dataOf<void>(api.post(`/posts/${id}/favorite`)),
+  unfavorite: (id: number) => dataOf<void>(api.delete(`/posts/${id}/favorite`)),
+  favorites: (page = 0) => dataOf<PostListResponse>(api.get('/posts/favorites', { params: { page } })),
+  batchUnfavorite: (ids: number[]) => dataOf<void>(api.delete('/posts/favorites/batch', { data: ids })),
+  createComment: (postId: number, payload: CreateCommentRequest) =>
+    dataOf<CommentResponse>(api.post(`/posts/${postId}/comments`, payload)),
+  listComments: (postId: number, page = 0) =>
+    dataOf<CommentResponse[]>(api.get(`/posts/${postId}/comments`, { params: { page } })),
+  deleteComment: (postId: number, commentId: number) =>
+    dataOf<void>(api.delete(`/posts/${postId}/comments/${commentId}`))
+}
+
+export const friendApi = {
+  createInvite: () => dataOf<FriendInvite>(api.post('/friends/invite')),
+  listInvites: () => dataOf<FriendInvite[]>(api.get('/friends/invites')),
+  addByInvite: (inviteCode: string) => dataOf<FriendInvite>(api.post('/friends/by-invite', { inviteCode })),
+  sendRequest: (phone: string, message?: string) => dataOf<FriendRequestItem>(api.post('/friends/request', { phone, message })),
+  listFriends: () => dataOf<UserProfile[]>(api.get('/friends')),
+  listRequests: () => dataOf<FriendRequestItem[]>(api.get('/friends/requests')),
+  acceptRequest: (id: number) => dataOf<FriendRequestItem>(api.put(`/friends/requests/${id}/accept`)),
+  rejectRequest: (id: number) => dataOf<FriendRequestItem>(api.put(`/friends/requests/${id}/reject`)),
+  blockRequest: (id: number) => dataOf<FriendRequestItem>(api.put(`/friends/requests/${id}/block`)),
+  cancelRequest: (id: number) => dataOf<void>(api.delete(`/friends/requests/${id}`)),
+  deleteFriend: (friendId: number) => dataOf<void>(api.delete(`/friends/${friendId}`)),
+  blockFriend: (friendId: number) => dataOf<void>(api.put(`/friends/${friendId}/block`)),
+  unblockFriend: (friendId: number) => dataOf<void>(api.put(`/friends/${friendId}/unblock`)),
+  listBlocked: () => dataOf<UserProfile[]>(api.get('/friends/blocked')),
+  searchByPhone: (phone: string) => dataOf<UserProfile>(api.get('/friends/search', { params: { phone } }))
+}
+
+export const openMatchApi = {
+  toggle: () => dataOf<OpenMatchStatus>(api.post('/match/open/toggle')),
+  status: () => dataOf<OpenMatchStatus>(api.get('/match/open/status')),
+  recommendations: () => dataOf<OpenMatchRecommendation[]>(api.get('/match/open/recommendations'))
+}
+
+export const chatApi = {
+  sendMessage: (friendId: number, content: string) => dataOf<ChatMessage>(api.post(`/chat/messages/${friendId}`, { content })),
+  getMessages: (friendId: number, page = 0) => dataOf<ChatMessage[]>(api.get(`/chat/messages/${friendId}`, { params: { page } })),
+  getConversations: () => dataOf<ChatConversation[]>(api.get('/chat/conversations')),
+  markRead: (friendId: number) => dataOf<void>(api.put(`/chat/messages/${friendId}/read`)),
+  getUnreadCount: () => dataOf<number>(api.get('/chat/unread-count'))
 }

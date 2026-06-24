@@ -6,9 +6,10 @@ export function useRadarChart(chartEl: Ref<HTMLDivElement | null>) {
 
   function draw(option: Record<string, unknown>) {
     if (!chartEl.value) return
-    chart?.dispose()
-    chart = echarts.init(chartEl.value)
-    chart.setOption(option)
+    if (!chart) {
+      chart = echarts.init(chartEl.value)
+    }
+    chart.setOption(option as any)
   }
 
   function resize() {

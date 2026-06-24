@@ -7,6 +7,7 @@ import TestView from './views/TestView.vue'
 import ReportView from './views/ReportView.vue'
 import RecommendationsView from './views/RecommendationsView.vue'
 import MatchView from './views/MatchView.vue'
+import MatchTabs from './views/MatchTabs.vue'
 import ProfileView from './views/ProfileView.vue'
 import AdminView from './views/AdminView.vue'
 import ShareView from './views/ShareView.vue'
@@ -20,10 +21,23 @@ const router = createRouter({
     { path: '/tests/:type?', component: TestView, meta: { auth: true } },
     { path: '/report', component: ReportView, meta: { auth: true } },
     { path: '/recommendations', component: RecommendationsView, meta: { auth: true } },
-    { path: '/match', component: MatchView, meta: { auth: true } },
+    {
+      path: '/match',
+      component: MatchTabs,
+      meta: { auth: true },
+      children: [
+        { path: '', component: MatchView },
+        { path: 'friends', component: () => import('./views/FriendsView.vue') },
+        { path: 'chat', component: () => import('./views/ChatListView.vue') },
+        { path: 'chat/:friendId', component: () => import('./views/ChatDetailView.vue') }
+      ]
+    },
     { path: '/profile', component: ProfileView, meta: { auth: true } },
     { path: '/admin', component: AdminView, meta: { auth: true, admin: true } },
-    { path: '/share/:token', component: ShareView }
+    { path: '/share/:token', component: ShareView },
+    { path: '/community', component: () => import('./views/community/CommunityView.vue'), meta: { auth: true } },
+    { path: '/community/create', component: () => import('./views/community/PostCreateView.vue'), meta: { auth: true } },
+    { path: '/community/post/:id', component: () => import('./views/community/PostDetailView.vue'), meta: { auth: true } }
   ]
 })
 

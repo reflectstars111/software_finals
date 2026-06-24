@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { ClipboardList, MessageSquare, HeartHandshake, Share2 } from 'lucide-vue-next'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
@@ -54,10 +55,10 @@ onMounted(load)
 
     <template v-else>
       <section class="grid four">
-        <div class="card metric"><strong>{{ testCount }}</strong><span>测试记录</span></div>
-        <div class="card metric"><strong>{{ feedbackCount }}</strong><span>推荐反馈</span></div>
-        <div class="card metric"><strong>{{ matchCount }}</strong><span>适配报告</span></div>
-        <div class="card metric"><strong>{{ shareCount }}</strong><span>有效分享</span></div>
+        <div class="card metric"><ClipboardList :size="22" class="metric-icon" /><strong>{{ testCount }}</strong><span>测试记录</span></div>
+        <div class="card metric"><MessageSquare :size="22" class="metric-icon" /><strong>{{ feedbackCount }}</strong><span>推荐反馈</span></div>
+        <div class="card metric"><HeartHandshake :size="22" class="metric-icon" /><strong>{{ matchCount }}</strong><span>适配报告</span></div>
+        <div class="card metric"><Share2 :size="22" class="metric-icon" /><strong>{{ shareCount }}</strong><span>有效分享</span></div>
       </section>
 
       <section class="panel section-gap">

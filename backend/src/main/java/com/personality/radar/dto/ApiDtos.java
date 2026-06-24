@@ -77,6 +77,20 @@ public final class ApiDtos {
             boolean active) {
     }
 
+    public record LocationRecommendationResponse(
+            Long id,
+            String scene,
+            String title,
+            String description,
+            List<String> tags,
+            int score,
+            Integer baseScore,
+            boolean active,
+            String address,
+            String aiReason,
+            String source) {
+    }
+
     public record FeedbackRequest(
             @NotBlank String rating,
             @Size(max = 100) String comment) {
@@ -207,4 +221,101 @@ public final class ApiDtos {
             String comment,
             Instant createdAt) {
     }
+
+    // === Community: Post DTOs ===
+    public record CreatePostRequest(
+            @NotBlank String content,
+            @NotBlank String domainTag,
+            List<String> styleTags) {
+    }
+
+    public record PostResponse(
+            Long id,
+            UserProfileResponse author,
+            String content,
+            String images,
+            String domainTag,
+            List<String> styleTags,
+            Map<String, Integer> aiVector,
+            String aiReviewStatus,
+            int likeCount,
+            int favoriteCount,
+            int commentCount,
+            int viewCount,
+            int compatibility,
+            boolean showCompatibility,
+            Instant createdAt,
+            Instant updatedAt) {
+    }
+
+    public record PostListResponse(
+            List<PostResponse> items,
+            int total) {
+    }
+
+    public record CreateCommentRequest(
+            @NotBlank String content) {
+    }
+
+    public record CommentResponse(
+            Long id,
+            String content,
+            UserProfileResponse user,
+            Instant createdAt) {
+    }
+
+    // === Region DTOs ===
+    public record SimpleRegion(Long id, String name) {}
+
+    public record RegionRequest(String province, String city, String district) {}
+
+    public record RegionResponse(String province, String city, String district) {}
+
+    public record RegionRecord(String province, String city, String district,
+                               boolean isCurrent, Instant createdAt) {}
+
+    // === Friend DTOs ===
+    public record FriendInviteResponse(
+            String code,
+            Instant createdAt,
+            String status,
+            Instant expiresAt) {}
+
+    public record FriendByInviteRequest(@NotBlank String inviteCode) {}
+
+    public record FriendRequestSend(
+            @NotBlank @Pattern(regexp = "^\\d{11}$") String phone,
+            @Size(max = 50) String message) {}
+
+    public record FriendRequestResponse(
+            Long id,
+            UserProfileResponse fromUser,
+            UserProfileResponse toUser,
+            String status,
+            String message,
+            Instant createdAt) {}
+
+    // === Open Match DTOs ===
+    public record OpenMatchStatusResponse(boolean enabled, String message) {}
+
+    public record OpenMatchRecommendationResponse(
+            UserProfileResponse user,
+            double score,
+            List<String> topDimensions) {}
+
+    // === Chat DTOs ===
+    public record SendMessageRequest(@NotBlank @Size(min = 1, max = 500) String content) {}
+
+    public record ChatMessageResponse(
+            Long id,
+            UserProfileResponse sender,
+            String content,
+            boolean read,
+            Instant createdAt) {}
+
+    public record ChatConversationResponse(
+            UserProfileResponse friend,
+            String lastMessage,
+            Instant lastMessageTime,
+            long unreadCount) {}
 }
