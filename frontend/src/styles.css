@@ -161,7 +161,8 @@ button.danger:hover { background: #fde5e2; }
   position: relative; width: 100vw; min-height: calc(100vh - 80px);
   margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
   padding: 64px max(24px, calc((100vw - 1120px) / 2)) 56px;
-  display: grid; align-content: center; gap: 28px; overflow: hidden;
+  display: grid;
+  align-content: center; align-items: center; gap: 34px; overflow: hidden;
   background: var(--field);
 }
 .hero-radar-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -169,6 +170,52 @@ button.danger:hover { background: #fde5e2; }
 .hero-copy h1 { max-width: 780px; font-size: 56px; color: #f4f2fa; }
 .hero-copy p:not(.eyebrow) { max-width: 620px; color: #b0b8d0; font-size: 18px; line-height: 1.6; }
 .hero-copy .eyebrow { color: var(--blip); }
+.hero-actions { margin-top: 24px; }
+.hero-stat-row {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px;
+}
+.hero-stat-row span {
+  min-height: 54px; min-width: 112px; padding: 8px 12px; border-radius: 8px;
+  display: grid; align-content: center; gap: 1px;
+  border: 1px solid rgba(180, 185, 210, 0.22);
+  background: rgba(250, 249, 246, 0.08); color: #c4cada;
+  font-size: 13px; font-weight: 700;
+}
+.hero-stat-row strong { color: var(--signal); font-size: 24px; line-height: 1; }
+.insight-section { margin-top: -4px; }
+.hero-insight-card {
+  width: 100%; padding: 22px; border-radius: 10px;
+  display: grid; grid-template-columns: minmax(240px, 0.8fr) minmax(320px, 1.2fr) minmax(220px, 0.75fr);
+  align-items: center; gap: 22px;
+  border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow);
+}
+.insight-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.insight-card-head .eyebrow { color: #2a7a55; margin-bottom: 0; }
+.insight-card-head span {
+  min-height: 28px; padding: 4px 10px; border-radius: 999px;
+  background: var(--field); color: var(--signal); font-size: 12px; font-weight: 800;
+}
+.hero-insight-card h2 { margin: 16px 0 10px; font-size: 26px; }
+.insight-bars { display: grid; gap: 14px; margin-top: 0; }
+.insight-row { display: grid; gap: 8px; }
+.insight-row > div:first-child {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  color: var(--field); font-weight: 800;
+}
+.insight-row strong { color: #2a7a55; }
+.insight-track { height: 9px; border-radius: 999px; background: var(--mist); overflow: hidden; }
+.insight-track span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--blip), var(--signal));
+}
+.insight-recommendation {
+  margin-top: 0; padding: 14px; border-radius: 8px;
+  background: #fff8e8; border: 1px solid #f0e0b0;
+}
+.insight-recommendation strong { color: var(--field); }
+.insight-recommendation p { margin: 4px 0 0; color: var(--muted); }
 
 .hero-flow {
   width: min(700px, 100%);
@@ -416,6 +463,8 @@ th { background: #f8f7fa; color: var(--muted); font-size: 12px; font-weight: 700
   .food-card-head .score-pill { grid-column: 2; justify-self: start; }
   .hero-band { min-height: auto; padding: 36px 16px; }
   .hero-copy h1 { font-size: 32px; }
+  .hero-insight-card { grid-template-columns: 1fr; padding: 18px; }
+  .hero-stat-row span { min-width: 0; flex: 1 1 120px; }
   .hero-flow { grid-template-columns: 1fr; max-width: 240px; }
   .flow-line { width: 2px; height: 16px; }
   .scale-grid { grid-template-columns: 1fr; }
