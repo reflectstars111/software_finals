@@ -55,8 +55,19 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
+    const status = error.response?.status
+    const url = error.config?.url || ''
     const message = error.response?.data?.message || error.message || '网络异常，请稍后再试'
-    return Promise.reject(new Error(message))
+    if (status === 401 && !url.startsWith('/auth/')) {
+      localStorage.removeItem('radar_token')
+      localStorage.removeItem('radar_user')
+      if (window.location.pathname !== '/login') {
+        window.location.assign('/login')
+      }
+    }
+    const wrapped = new Error(message) as Error & { status?: number }
+    wrapped.status = status
+    return Promise.reject(wrapped)
   }
 )
 
@@ -193,3 +204,4 @@ export const chatApi = {
   markRead: (friendId: number) => dataOf<void>(api.put(`/chat/messages/${friendId}/read`)),
   getUnreadCount: () => dataOf<number>(api.get('/chat/unread-count'))
 }
+
