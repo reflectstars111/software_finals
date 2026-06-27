@@ -93,8 +93,8 @@ onMounted(load)
     <template v-if="post">
       <article class="panel">
         <template v-if="editingPost">
-          <textarea v-model="editText" class="field-input" rows="3" style="width:100%"></textarea>
-          <div class="toolbar" style="margin-top:8px">
+          <textarea v-model="editText" class="field-input post-edit-field" rows="3"></textarea>
+          <div class="toolbar post-edit-toolbar">
             <button class="primary small" @click="saveEditPost()">保存</button>
             <button class="ghost small" @click="editingPost = false">取消</button>
           </div>
@@ -129,8 +129,8 @@ onMounted(load)
             <small class="muted">{{ formatTime(c.createdAt) }}</small>
           </div>
           <template v-if="editingCommentId === c.id">
-            <textarea v-model="editText" class="field-input" rows="2" style="width:100%"></textarea>
-            <div class="toolbar" style="margin-top:6px">
+            <textarea v-model="editText" class="field-input post-edit-field" rows="2"></textarea>
+            <div class="toolbar comment-edit-toolbar">
               <button class="primary small" @click="saveEditComment(c.id)">保存</button>
               <button class="ghost small" @click="editingCommentId = null">取消</button>
             </div>
@@ -138,7 +138,7 @@ onMounted(load)
           <template v-else>
             <p>{{ c.content }}</p>
           </template>
-          <div v-if="auth.isAdmin || c.user.id === auth.user?.id || post?.author.id === auth.user?.id" class="toolbar" style="margin-top:4px">
+          <div v-if="auth.isAdmin || c.user.id === auth.user?.id || post?.author.id === auth.user?.id" class="toolbar comment-action-bar">
             <button v-if="c.user.id === auth.user?.id" class="secondary small" @click="startEditComment(c)">编辑</button>
             <button class="ghost small" @click="deleteComment(c.id)">删除</button>
           </div>
@@ -151,5 +151,17 @@ onMounted(load)
 <style scoped>
 .comment-card {
   margin-bottom: 8px;
+}
+.post-edit-field {
+  width: 100%;
+}
+.post-edit-toolbar {
+  margin-top: 8px;
+}
+.comment-edit-toolbar {
+  margin-top: 6px;
+}
+.comment-action-bar {
+  margin-top: 4px;
 }
 </style>

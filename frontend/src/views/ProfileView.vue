@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
+import BaseModal from '../components/common/BaseModal.vue'
 import type { TestResult, ReportSnapshot, MatchReport, ShareLinkSummary, MatchInvite, UserFeedback, MyCommentResponse, PostResponse } from '../types'
 import { revokeShare } from '../services/reportService'
 import { useAuthStore } from '../stores/auth'
@@ -27,6 +28,7 @@ const loading = ref(true)
 const editingPostId = ref<number | null>(null)
 const editingCommentId = ref<number | null>(null)
 const editText = ref('')
+const confirmAction = ref<{ type: string; id: number } | null>(null)
 
 function typeLabel(type: string) {
   const labels: Record<string, string> = {
@@ -60,16 +62,31 @@ async function doRevokeShare(id: number) {
   }
 }
 
-async function doDeletePost(id: number) {
-  if (!confirm('确认删除该帖子？')) return
-  try { await postApi.delete(id); myPosts.value = myPosts.value.filter(p => p.id !== id); notice.value = '帖子已删除' }
-  catch (err) { error.value = (err as Error).message || '删除失败' }
+function doDeletePost(id: number) {
+  confirmAction.value = { type: 'post', id }
 }
 
-async function doDeleteComment(id: number) {
-  if (!confirm('确认删除该评论？')) return
-  try { await postApi.deleteOwnComment(id); myComments.value = myComments.value.filter(c => c.id !== id); notice.value = '评论已删除' }
-  catch (err) { error.value = (err as Error).message || '删除失败' }
+function doDeleteComment(id: number) {
+  confirmAction.value = { type: 'comment', id }
+}
+
+async function executeConfirm() {
+  const action = confirmAction.value
+  if (!action) return
+  confirmAction.value = null
+  try {
+    if (action.type === 'post') {
+      await postApi.delete(action.id)
+      myPosts.value = myPosts.value.filter(p => p.id !== action.id)
+      notice.value = '帖子已删除'
+    } else if (action.type === 'comment') {
+      await postApi.deleteOwnComment(action.id)
+      myComments.value = myComments.value.filter(c => c.id !== action.id)
+      notice.value = '评论已删除'
+    }
+  } catch (err) {
+    error.value = (err as Error).message || '删除失败'
+  }
 }
 
 function startEditPost(post: PostResponse) { editingPostId.value = post.id; editingCommentId.value = null; editText.value = post.content }
@@ -262,7 +279,7 @@ onMounted(load)
             <tbody>
               <tr v-for="p in myPosts" :key="p.id">
                 <td v-if="editingPostId === p.id" colspan="3">
-                  <textarea v-model="editText" class="field-input" rows="2" style="width:100%"></textarea>
+                  <textarea v-model="editText" class="field-input table-edit-field" rows="2"></textarea>
                 </td>
                 <td v-else>
                   <RouterLink :to="`/community/post/${p.id}`">{{ p.content.slice(0, 40) }}{{ p.content.length > 40 ? '...' : '' }}</RouterLink>
@@ -302,7 +319,7 @@ onMounted(load)
             <tbody>
               <tr v-for="c in myComments" :key="c.id">
                 <td v-if="editingCommentId === c.id" colspan="2">
-                  <textarea v-model="editText" class="field-input" rows="2" style="width:100%"></textarea>
+                  <textarea v-model="editText" class="field-input table-edit-field" rows="2"></textarea>
                 </td>
                 <td v-else>{{ c.content.slice(0, 40) }}{{ c.content.length > 40 ? '...' : '' }}</td>
                 <td v-if="editingCommentId !== c.id">
@@ -325,5 +342,30 @@ onMounted(load)
         </div>
       </article>
     </section>
+
+    <!-- Confirm modals -->
+    <BaseModal
+      :open="confirmAction?.type === 'post'"
+      title="确认删除"
+      variant="danger"
+      confirm-text="删除"
+      @close="confirmAction = null"
+      @confirm="executeConfirm"
+    ><p>确认删除该帖子？此操作不可撤销。</p></BaseModal>
+
+    <BaseModal
+      :open="confirmAction?.type === 'comment'"
+      title="确认删除"
+      variant="danger"
+      confirm-text="删除"
+      @close="confirmAction = null"
+      @confirm="executeConfirm"
+    ><p>确认删除该评论？此操作不可撤销。</p></BaseModal>
   </PageContainer>
 </template>
+
+<style scoped>
+.table-edit-field {
+  width: 100%;
+}
+</style>

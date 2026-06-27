@@ -106,11 +106,17 @@ const sceneCards = [
       </aside>
     </section>
 
-    <section class="grid three">
-      <article v-for="item in capabilities" :key="item.title" class="card feature-card">
-        <h2>{{ item.title }}</h2>
-        <p>{{ item.desc }}</p>
+    <section class="capabilities-section">
+      <article class="card feature-card capabilities-lead">
+        <h2>{{ capabilities[0].title }}</h2>
+        <p>{{ capabilities[0].desc }}</p>
       </article>
+      <div class="capabilities-row">
+        <article v-for="item in capabilities.slice(1)" :key="item.title" class="card feature-card">
+          <h2>{{ item.title }}</h2>
+          <p>{{ item.desc }}</p>
+        </article>
+      </div>
     </section>
 
     <section class="panel product-note">
@@ -136,8 +142,13 @@ const sceneCards = [
     <!-- Scene Entry Cards -->
     <section class="section-gap">
       <h2 class="scene-section-title">探索推荐场景</h2>
-      <div class="grid three">
-        <RouterLink v-for="scene in sceneCards" :key="scene.title" :to="scene.to" class="card scene-card">
+      <div class="scene-grid">
+        <RouterLink :to="sceneCards[0].to" class="card scene-card scene-card-primary">
+          <component :is="sceneCards[0].icon" :size="28" class="metric-icon" />
+          <h2>{{ sceneCards[0].title }}</h2>
+          <p class="muted">{{ sceneCards[0].desc }}</p>
+        </RouterLink>
+        <RouterLink v-for="scene in sceneCards.slice(1)" :key="scene.title" :to="scene.to" class="card scene-card">
           <component :is="scene.icon" :size="28" class="metric-icon" />
           <h2>{{ scene.title }}</h2>
           <p class="muted">{{ scene.desc }}</p>
@@ -188,5 +199,59 @@ const sceneCards = [
   vertical-align: middle;
   margin-right: 6px;
   color: var(--blip);
+}
+
+/* ---- Asymmetric capabilities ---- */
+.capabilities-section {
+  display: grid;
+  gap: 24px;
+}
+
+.capabilities-lead {
+  border-left: 3px solid var(--blip);
+  padding-left: calc(20px - 3px);
+}
+
+.capabilities-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+/* ---- Asymmetric scene grid ---- */
+.scene-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+.scene-card-primary {
+  grid-row: 1 / 3;
+  display: grid;
+  align-content: start;
+}
+
+@media (max-width: 920px) {
+  .capabilities-row {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-card-primary {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .capabilities-row {
+    grid-template-columns: 1fr;
+  }
+
+  .scene-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

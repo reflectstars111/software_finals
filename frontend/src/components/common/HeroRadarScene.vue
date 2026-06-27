@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '')
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean
+  const r = parseInt(full.slice(0, 2), 16)
+  const g = parseInt(full.slice(2, 4), 16)
+  const b = parseInt(full.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 let raf = 0
 
@@ -119,7 +128,7 @@ function draw(time: number) {
   // Blip dots + labels
   points.forEach((p) => {
     // Outer glow
-    ctx.fillStyle = p.color.replace(')', ', 0.25)').replace('rgb', 'rgba')
+    ctx.fillStyle = hexToRgba(p.color, 0.25)
     ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI * 2); ctx.fill()
     // Core dot
     ctx.fillStyle = p.color

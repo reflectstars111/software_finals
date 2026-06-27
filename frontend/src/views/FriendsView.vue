@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import EmptyState from '../components/common/EmptyState.vue'
 import LoadingState from '../components/common/LoadingState.vue'
 import PageContainer from '../components/common/PageContainer.vue'
+import BaseModal from '../components/common/BaseModal.vue'
 import type { FriendInvite, FriendRequestItem, OpenMatchRecommendation, OpenMatchStatus, UserProfile } from '../types'
 import {
   generateFriendInvite, addFriendByInvite, sendFriendRequest, getFriends, getFriendRequests,
@@ -30,6 +31,7 @@ const requestMessage = ref('')
 const notice = ref('')
 const error = ref('')
 const loading = ref(true)
+const confirmAction = ref<{ type: string; id: number; name: string } | null>(null)
 
 const incomingRequests = computed(() => requests.value.filter(r => r.status === 'PENDING' && r.toUser.id === auth.user?.id))
 const outgoingRequests = computed(() => requests.value.filter(r => r.status === 'PENDING' && r.fromUser.id === auth.user?.id))
@@ -104,9 +106,20 @@ async function doBlockRequest(id: number) {
 async function doCancelRequest(id: number) {
   try { await cancelFriendRequest(id); await load() } catch (err) { error.value = getErrorMessage(err) }
 }
-async function doDeleteFriend(friendId: number, name: string) {
-  if (!confirm(`确定删除好友 ${name}？聊天记录仍会保留。`)) return
-  try { await deleteFriend(friendId); await load() } catch (err) { error.value = getErrorMessage(err) }
+function doDeleteFriend(friendId: number, name: string) {
+  confirmAction.value = { type: 'friend', id: friendId, name }
+}
+
+async function executeConfirm() {
+  const action = confirmAction.value
+  if (!action) return
+  confirmAction.value = null
+  try {
+    await deleteFriend(action.id)
+    await load()
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  }
 }
 async function doToggleMatch() {
   error.value = ''
@@ -285,17 +298,20 @@ onMounted(load)
         </div>
       </div>
     </section>
+
+    <!-- Confirm modal -->
+    <BaseModal
+      :open="confirmAction?.type === 'friend'"
+      title="确认删除好友"
+      variant="danger"
+      confirm-text="删除"
+      @close="confirmAction = null"
+      @confirm="executeConfirm"
+    ><p>确定删除好友 {{ confirmAction?.name }}？聊天记录仍会保留。</p></BaseModal>
   </PageContainer>
 </template>
 
 <style scoped>
-.friend-list, .rec-list, .request-list, .tab-bar, .action-row {
-  /* 映射到全局设计系统变量 */
-  --accent: var(--blip);
-  --text: var(--ink);
-  --border: var(--line);
-  --bg: #f0eef6;
-}
 .tab-bar {
   display: flex;
   gap: 0;
@@ -320,7 +336,7 @@ onMounted(load)
 }
 .badge {
   background: var(--accent);
-  color: #fff;
+  color: var(--surface);
   border-radius: 10px;
   padding: 1px 7px;
   font-size: 0.75rem;
@@ -356,7 +372,7 @@ onMounted(load)
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg);
+  background: var(--soft);
   color: var(--text);
   font-size: 0.9rem;
   min-width: 180px;
@@ -384,7 +400,7 @@ onMounted(load)
   height: 40px;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;

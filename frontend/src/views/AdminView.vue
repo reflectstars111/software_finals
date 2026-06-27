@@ -29,6 +29,8 @@ const editingQuestion = ref<Partial<Question> | null>(null)
 const editingRec = ref<Partial<Recommendation> | null>(null)
 const newRule = ref({ tag: '', label: '', weight: 4 })
 
+const confirmAction = ref<{ type: string; id: number } | null>(null)
+
 const stats = computed(() => dashboard.value?.stats)
 
 async function load() {
@@ -72,10 +74,8 @@ async function saveQuestion() {
   else await adminApi.createQuestion(payload)
   showQuestionForm.value = false; notice.value = '题目已保存'; await load()
 }
-async function deleteQuestion(id: number) {
-  if (!confirm('确认删除该题目？')) return
-  await adminApi.deleteQuestion(id)
-  notice.value = '题目已删除'; await load()
+function deleteQuestion(id: number) {
+  confirmAction.value = { type: 'question', id }
 }
 
 // --- Recommendation CRUD ---
@@ -88,10 +88,8 @@ async function saveRec() {
   else await adminApi.createRecommendation(payload)
   showRecForm.value = false; notice.value = '推荐项已保存'; await load()
 }
-async function deleteRec(id: number) {
-  if (!confirm('确认删除该推荐项？')) return
-  await adminApi.deleteRecommendation(id)
-  notice.value = '推荐项已删除'; await load()
+function deleteRec(id: number) {
+  confirmAction.value = { type: 'rec', id }
 }
 
 // --- Rule CRUD ---
@@ -105,10 +103,29 @@ async function createRule() {
   newRule.value = { tag: '', label: '', weight: 4 }; showRuleForm.value = false
   notice.value = '规则已创建'; await load()
 }
-async function deleteRule(id: number) {
-  if (!confirm('确认删除该规则？')) return
-  await adminApi.deleteRecommendationRule(id)
-  notice.value = '规则已删除'; await load()
+function deleteRule(id: number) {
+  confirmAction.value = { type: 'rule', id }
+}
+
+async function executeConfirm() {
+  const action = confirmAction.value
+  if (!action) return
+  confirmAction.value = null
+  try {
+    if (action.type === 'question') {
+      await adminApi.deleteQuestion(action.id)
+      notice.value = '题目已删除'
+    } else if (action.type === 'rec') {
+      await adminApi.deleteRecommendation(action.id)
+      notice.value = '推荐项已删除'
+    } else if (action.type === 'rule') {
+      await adminApi.deleteRecommendationRule(action.id)
+      notice.value = '规则已删除'
+    }
+    await load()
+  } catch (err) {
+    error.value = getErrorMessage(err)
+  }
 }
 
 onMounted(load)
@@ -290,6 +307,34 @@ onMounted(load)
           <button class="primary" type="button" @click="createRule">保存</button>
         </div>
       </BaseModal>
+
+      <!-- Confirm modals -->
+      <BaseModal
+        :open="confirmAction?.type === 'question'"
+        title="确认删除"
+        variant="danger"
+        confirm-text="删除"
+        @close="confirmAction = null"
+        @confirm="executeConfirm"
+      ><p>确认删除该题目？此操作不可撤销。</p></BaseModal>
+
+      <BaseModal
+        :open="confirmAction?.type === 'rec'"
+        title="确认删除"
+        variant="danger"
+        confirm-text="删除"
+        @close="confirmAction = null"
+        @confirm="executeConfirm"
+      ><p>确认删除该推荐项？此操作不可撤销。</p></BaseModal>
+
+      <BaseModal
+        :open="confirmAction?.type === 'rule'"
+        title="确认删除"
+        variant="danger"
+        confirm-text="删除"
+        @close="confirmAction = null"
+        @confirm="executeConfirm"
+      ><p>确认删除该规则？此操作不可撤销。</p></BaseModal>
     </template>
   </PageContainer>
 </template>

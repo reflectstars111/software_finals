@@ -88,4 +88,9 @@ function formatTime(value: string) {
   color: var(--danger);
   background: var(--error-bg);
 }
+.post-delete-btn:focus-visible {
+  opacity: 1;
+  color: var(--danger);
+  background: var(--error-bg);
+}
 </style>

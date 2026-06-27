@@ -13,6 +13,7 @@ const router = useRouter()
 const auth = useAuthStore()
 
 // ---- Sidebar state ----
+const showSidebar = ref(true)
 const conversations = ref<ChatConversation[]>([])
 const sidebarLoading = ref(true)
 const sidebarError = ref('')
@@ -30,6 +31,7 @@ let chatPollTimer: ReturnType<typeof setInterval> | null = null
 let currentPage = 0
 let allLoaded = false
 
+const isPageVisible = ref(true)
 const hasActiveChat = computed(() => activeFriendId.value !== null)
 
 // ---- Sidebar logic ----
@@ -159,6 +161,10 @@ watch(() => route.params.friendId, (newId) => {
   }
 })
 
+function onVisibilityChange() {
+  isPageVisible.value = document.visibilityState === 'visible'
+}
+
 // ---- Lifecycle ----
 onMounted(async () => {
   await loadConversations()
@@ -172,11 +178,21 @@ onMounted(async () => {
     await scrollToBottom()
   }
 
-  sidebarPollTimer = setInterval(loadConversations, 5000)
-  chatPollTimer = setInterval(doPoll, 3000)
+  document.addEventListener('visibilitychange', onVisibilityChange)
+  isPageVisible.value = document.visibilityState === 'visible'
+
+  sidebarPollTimer = setInterval(() => {
+    if (!isPageVisible.value) return
+    loadConversations()
+  }, 5000)
+  chatPollTimer = setInterval(() => {
+    if (!isPageVisible.value) return
+    doPoll()
+  }, 3000)
 })
 
 onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibilityChange)
   if (sidebarPollTimer) clearInterval(sidebarPollTimer)
   if (chatPollTimer) clearInterval(chatPollTimer)
 })
@@ -185,7 +201,7 @@ onUnmounted(() => {
 <template>
   <div class="chat-layout">
     <!-- Left Sidebar: Conversation List -->
-    <aside class="chat-sidebar">
+    <aside :class="['chat-sidebar', { open: showSidebar }]">
       <div class="sidebar-header">
         <h3>消息</h3>
       </div>
@@ -225,6 +241,9 @@ onUnmounted(() => {
       <template v-if="hasActiveChat">
         <!-- Chat Header -->
         <header class="chat-header">
+          <button class="hamburger-btn" @click="showSidebar = !showSidebar" aria-label="Toggle sidebar">
+            <span></span><span></span><span></span>
+          </button>
           <div v-if="friend" class="chat-partner">
             <div class="avatar-small">{{ friend.displayName.charAt(0) }}</div>
             <span class="partner-name">{{ friend.displayName }}</span>
@@ -343,7 +362,7 @@ onUnmounted(() => {
   height: 40px;
   border-radius: 50%;
   background: var(--blip);
-  color: #fff;
+  color: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,7 +417,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #f0eef6;
+  background: var(--soft);
 }
 .chat-header {
   display: flex;
@@ -419,7 +438,7 @@ onUnmounted(() => {
   height: 32px;
   border-radius: 50%;
   background: var(--blip);
-  color: #fff;
+  color: var(--surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -457,11 +476,11 @@ onUnmounted(() => {
 }
 .mine .bubble {
   background: var(--blip);
-  color: #fff;
+  color: var(--surface);
   border-bottom-right-radius: 4px;
 }
 .theirs .bubble {
-  background: #fff;
+  background: var(--surface);
   color: var(--ink);
   border-bottom-left-radius: 4px;
 }
@@ -488,7 +507,7 @@ onUnmounted(() => {
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: #f0eef6;
+  background: var(--soft);
   color: var(--ink);
   font-size: 0.95rem;
   outline: none;
@@ -512,5 +531,41 @@ onUnmounted(() => {
 }
 .placeholder-content h3 {
   margin-bottom: 8px;
+}
+
+/* ===== Hamburger ===== */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.hamburger-btn span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 640px) {
+  .hamburger-btn { display: flex; }
+  .chat-sidebar {
+    position: absolute;
+    width: 85vw;
+    max-width: 320px;
+    transform: translateX(-100%);
+    transition: transform 0.25s;
+  }
+  .chat-sidebar.open { transform: translateX(0); }
+  .chat-main { width: 100%; }
 }
 </style>

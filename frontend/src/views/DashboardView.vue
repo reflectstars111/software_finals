@@ -74,20 +74,48 @@ onMounted(load)
         </div>
       </section>
 
-      <section class="grid three section-gap">
-        <RouterLink class="card action-card" to="/tests/personality">
+      <section class="section-gap">
+        <RouterLink class="card action-card primary-action-card" to="/tests/personality">
           <h2>完成测评</h2>
           <p class="muted">性格、饮食、旅游和社交倾向一次完成。</p>
         </RouterLink>
-        <RouterLink class="card action-card" to="/recommendations">
-          <h2>获取推荐</h2>
-          <p class="muted">查看餐饮、旅游和社交推荐，并提交反馈。</p>
-        </RouterLink>
-        <RouterLink class="card action-card" to="/match">
-          <h2>双人适配</h2>
-          <p class="muted">生成邀请码，查看授权后的关系分析。</p>
-        </RouterLink>
+        <div class="capabilities-row">
+          <RouterLink class="card action-card" to="/recommendations">
+            <h2>获取推荐</h2>
+            <p class="muted">查看餐饮、旅游和社交推荐，并提交反馈。</p>
+          </RouterLink>
+          <RouterLink class="card action-card" to="/match">
+            <h2>双人适配</h2>
+            <p class="muted">生成邀请码，查看授权后的关系分析。</p>
+          </RouterLink>
+        </div>
       </section>
     </template>
   </PageContainer>
 </template>
+
+<style scoped>
+.primary-action-card {
+  border-left: 3px solid var(--blip);
+  padding-left: calc(20px - 3px);
+}
+
+.capabilities-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 920px) {
+  .capabilities-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .capabilities-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
