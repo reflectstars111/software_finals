@@ -25,11 +25,19 @@ const loaded = ref(false)
 const error = ref('')
 const showConsent = ref(false)
 
+function regionErrorMessage(err: unknown, fallback: string) {
+  const message = (err as Error)?.message || ''
+  if (message.includes('Network Error') || message.includes('timeout') || message.includes('ECONNREFUSED')) {
+    return fallback + '：后端服务未连接，请确认 8080 端口服务已启动。'
+  }
+  return message ? fallback + '：' + message : fallback
+}
+
 async function loadProvinces() {
   try {
     provinces.value = await fetchProvinces()
-  } catch {
-    error.value = '加载省份数据失败'
+  } catch (err) {
+    error.value = regionErrorMessage(err, '加载省份数据失败')
   }
 }
 
@@ -59,7 +67,7 @@ watch(selectedProvince, async (p) => {
   cities.value = []
   districts.value = []
   if (p) {
-    try { cities.value = await fetchCities(p.id) } catch { error.value = '加载城市数据失败' }
+    try { cities.value = await fetchCities(p.id) } catch (err) { error.value = regionErrorMessage(err, '加载城市数据失败') }
   }
 })
 
@@ -67,7 +75,7 @@ watch(selectedCity, async (c) => {
   selectedDistrict.value = null
   districts.value = []
   if (c) {
-    try { districts.value = await fetchDistricts(c.id) } catch { error.value = '加载区县数据失败' }
+    try { districts.value = await fetchDistricts(c.id) } catch (err) { error.value = regionErrorMessage(err, '加载区县数据失败') }
   }
 })
 
@@ -206,28 +214,49 @@ async function save() {
   <div class="region-selector">
     <div v-if="!loaded" class="region-loading">加载地域数据...</div>
     <template v-else>
-      <div class="region-fields">
-        <select v-model="selectedProvince" class="field select">
-          <option :value="null" disabled>选择省份</option>
-          <option v-for="p in provinces" :key="p.id" :value="p">{{ p.name }}</option>
-        </select>
-        <select v-model="selectedCity" class="field select" :disabled="!selectedProvince">
-          <option :value="null" disabled>选择城市</option>
-          <option v-for="c in cities" :key="c.id" :value="c">{{ c.name }}</option>
-        </select>
-        <select v-model="selectedDistrict" class="field select" :disabled="!selectedCity">
-          <option :value="null">不限区县</option>
-          <option v-for="d in districts" :key="d.id" :value="d">{{ d.name }}</option>
-        </select>
-        <button class="ghost" type="button" :disabled="locating" @click="autoLocate">{{ locating ? "定位中..." : "使用当前位置" }}</button>
-        <button class="primary" type="button" :disabled="!selectedProvince || !selectedCity || saving" @click="save">
-          {{ saving ? '保存中...' : '确认' }}
-        </button>
+      <div class="region-shell">
+        <div class="region-copy">
+          <span class="region-kicker">推荐位置</span>
+          <h2>选择餐饮、旅游推荐城市</h2>
+          <p v-if="region">
+            当前使用 <strong>{{ region.province }} {{ region.city }}{{ region.district ? ' ' + region.district : '' }}</strong> 生成本地化结果。
+          </p>
+          <p v-else>补充所在地后，系统会优先匹配附近的餐厅、景点和城市体验。</p>
+        </div>
+
+        <div class="region-controls">
+          <label class="region-field">
+            <span>省份</span>
+            <select v-model="selectedProvince">
+              <option :value="null" disabled>选择省份</option>
+              <option v-for="p in provinces" :key="p.id" :value="p">{{ p.name }}</option>
+            </select>
+          </label>
+          <label class="region-field">
+            <span>城市</span>
+            <select v-model="selectedCity" :disabled="!selectedProvince">
+              <option :value="null" disabled>选择城市</option>
+              <option v-for="c in cities" :key="c.id" :value="c">{{ c.name }}</option>
+            </select>
+          </label>
+          <label class="region-field">
+            <span>区县</span>
+            <select v-model="selectedDistrict" :disabled="!selectedCity">
+              <option :value="null">不限区县</option>
+              <option v-for="d in districts" :key="d.id" :value="d">{{ d.name }}</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="region-actions">
+          <button class="region-locate" type="button" :disabled="locating" @click="autoLocate">
+            {{ locating ? "定位中..." : "使用当前位置" }}
+          </button>
+          <button class="primary" type="button" :disabled="!selectedProvince || !selectedCity || saving" @click="save">
+            {{ saving ? '保存中...' : '确认地域' }}
+          </button>
+        </div>
       </div>
-      <div v-if="region" class="region-current">
-        当前地域：{{ region.province }} {{ region.city }}{{ region.district ? ' ' + region.district : '' }}
-      </div>
-      <div v-else class="region-hint">填写所在地，获取 AI 精准推荐</div>
       <div v-if="error" class="region-error">{{ error }}</div>
 
       <BaseModal :open="showConsent" title="位置授权" @close="showConsent = false">
@@ -245,34 +274,169 @@ async function save() {
 .region-selector {
   margin-bottom: 1.5rem;
 }
-.region-fields {
-  display: flex;
-  gap: 0.5rem;
+
+.region-shell {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.85fr) minmax(360px, 1.25fr) auto;
+  align-items: end;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(216, 212, 226, 0.95);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(135deg, rgba(108, 204, 160, 0.08), rgba(232, 180, 79, 0.08)),
+    var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.region-copy {
+  min-width: 0;
+}
+
+.region-kicker {
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--blip);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
-.region-fields select {
-  min-width: 120px;
+
+.region-copy h2 {
+  margin: 10px 0 6px;
+  color: var(--field);
 }
-.region-current {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
+
+.region-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.region-copy strong {
+  color: var(--field);
+}
+
+.region-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.region-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.region-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.region-field select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 36px 0 12px;
+  color: var(--ink);
+  background:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%) calc(100% - 18px) 19px / 6px 6px no-repeat,
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%) calc(100% - 14px) 19px / 6px 6px no-repeat,
+    var(--surface);
+  appearance: none;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.region-field select:focus {
+  border-color: var(--blip);
+  box-shadow: var(--ring-blip);
+}
+
+.region-field select:disabled {
+  background-color: var(--soft);
   color: var(--muted);
 }
-.region-hint {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--muted);
-  font-style: italic;
+
+.region-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  justify-content: flex-end;
 }
+
+.region-locate {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(232, 180, 79, 0.45);
+  border-radius: var(--radius-sm);
+  background: #fff8e8;
+  color: var(--field);
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background 0.16s ease, transform 0.10s ease, border-color 0.16s ease;
+}
+
+.region-locate:hover:not(:disabled) {
+  border-color: var(--signal);
+  background: #fff2d2;
+}
+
+.region-locate:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 .region-error {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   color: var(--error);
   font-size: 0.875rem;
 }
 .region-loading {
-  font-size: 0.875rem;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
   color: var(--muted);
+  font-size: 0.9rem;
 }
 .consent-actions { margin-top: 1.25rem; justify-content: flex-end; }
+
+@media (max-width: 920px) {
+  .region-shell {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .region-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .region-actions {
+    justify-content: stretch;
+  }
+
+  .region-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .region-actions {
+    flex-direction: column;
+  }
+
+  .region-actions button {
+    width: 100%;
+  }
+}
 </style>
